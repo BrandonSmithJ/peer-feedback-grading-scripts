@@ -1,5 +1,6 @@
 from selenium import webdriver
 import urllib.request
+import os
 
 
 LOGIN_URL = 'https://peerfeedback.gatech.edu/login'
@@ -24,7 +25,7 @@ def login(driver):
 
     return driver
 
-def parse_assignments(driver):
+def pull_assignments(driver):
     assignments = []
     links = driver.find_elements_by_xpath("//a[contains(@class, 'taskButton')]")
 
@@ -40,15 +41,17 @@ def parse_assignments(driver):
         driver.get(assignment['feedback_url'])
         download_link = driver.find_element_by_xpath("//h2/a")
         assignment_url = download_link.get_attribute('href')
-        filename = "assignments/%s.pdf" % (assignment['feedback_id'])
-        urllib.request.urlretrieve(assignment_url, filename)
+        os.makedirs('assignments', exist_ok=True)
+
+        path = "assignments/%s.pdf" % (assignment['feedback_id'])
+
+        urllib.request.urlretrieve(assignment_url, path)
 
     return assignments
 
 def process(driver):
     login(driver)
-    assignments = parse_assignments(driver)
-    populate_spreadsheet(driver)
+    pull_assignments(driver)
 
 
 if __name__ == "__main__":
