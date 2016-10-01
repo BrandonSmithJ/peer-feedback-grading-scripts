@@ -46,6 +46,6 @@ Generates the following:
 
 #### Generated `grades.xlsx` spreadsheet
 
-![grades-output-example](https://github.gatech.edu/storage/user/4328/files/0118cd62-87ec-11e6-9b26-2d29166918dc)
+![grades](https://github.gatech.edu/storage/user/4328/files/504d754c-8803-11e6-8f91-6c14c535ac76)
 
 > Note when opening the spreadsheet you may be prompted to repair, just repair and save and it will open regularly after that.
