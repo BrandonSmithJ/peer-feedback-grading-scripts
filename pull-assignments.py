@@ -64,20 +64,22 @@ def populate_spreadsheet(assignment, assignments={}):
     end_row = len(assignments) + start_row - 1
 
     ws['A1'] = 'Generated on %s' % (datetime.datetime.now())
-    ws['B4'] = '=AVERAGE(L%s:L%s)' % (start_row, end_row)
-    ws['C4'] = '=MEDIAN(L%s:L%s)' % (start_row, end_row)
-    ws['D4'] = '=STDEV(L%s:L%s)' % (start_row, end_row)
+    ws['B4'] = '=AVERAGE(K%s:K%s)' % (start_row, end_row)
+    ws['C4'] = '=MEDIAN(K%s:K%s)' % (start_row, end_row)
+    ws['D4'] = '=STDEV(K%s:K%s)' % (start_row, end_row)
 
     for i in range(start_row, end_row + 1):
         ws['A%s' % i].style = center
         ws['B%s' % i].style = center
-        ws['L%s' % i].style = center
+        ws['K%s' % i].style = center
 
     current_row = start_row
     for assignment in assignments:
         ws.cell(row=current_row, column=1, value=assignment['name'])
         ws.cell(row=current_row, column=2, value=assignment['feedback_id'])
-        ws.cell(row=current_row, column=12, value='=SUM(C%s:K%s)' % (current_row, current_row))
+        ws.cell(row=current_row, column=11, value='=+IF(SUM(C%s:J%s)=0,"",SUM(C%s:J%s))' % (
+            current_row, current_row, current_row, current_row)
+        )
         current_row += 1
 
     wb.save(workbook_path)
