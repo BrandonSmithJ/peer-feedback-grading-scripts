@@ -4,11 +4,22 @@ from openpyxl import load_workbook
 import datetime
 import urllib.request
 import os, json
-
+import platform
 
 LOGIN_URL = 'https://peerfeedback.gatech.edu/login'
 GRADING_TEMPLATE_PATH = "templates/KBAI PF Grading Template.xltx"
-driver = webdriver.Chrome('./chromedriver')
+
+
+def get_driver():
+    if platform.system() == 'Darwin':
+        path = 'chromedrivers/chromedriver-mac'
+    elif platform.system() == 'Linux':
+        path = 'chromedrivers/chromedriver-linux'
+    elif platform.system() == 'Windows':
+        path = 'chromedrivers/chromedriver.exe'
+    return webdriver.Chrome(path)
+
+driver = get_driver()
 
 
 def login():
