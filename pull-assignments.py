@@ -4,9 +4,10 @@ import os
 
 
 LOGIN_URL = 'https://peerfeedback.gatech.edu/login'
+driver = webdriver.Chrome('./chromedriver')
 
 
-def login(driver):
+def login():
     """prompts user to enter username and password to use"""
     driver.get(LOGIN_URL)
 
@@ -24,7 +25,8 @@ def login(driver):
 
     return driver
 
-def pull_assignments(driver):
+def pull_assignments():
+    """visits each assigned task, pulls the assignment as feedback_id"""
     assignments = []
     links = driver.find_elements_by_xpath("//a[contains(@class, 'taskButton')]")
 
@@ -48,12 +50,10 @@ def pull_assignments(driver):
 
     return assignments
 
-def process(driver):
-    login(driver)
-    pull_assignments(driver)
-
+def process():
+    login()
+    pull_assignments()
+    driver.close()
 
 if __name__ == "__main__":
-    driver = webdriver.Chrome('./chromedriver')
-    process(driver)
-    driver.close()
+    process()
