@@ -1,12 +1,15 @@
 from selenium import webdriver
+
 from openpyxl.workbook import Workbook
 from openpyxl import load_workbook
 from openpyxl.styles import NamedStyle, Font, Alignment
 
 import datetime
 import urllib.request
-import os, json
+import os
+import json
 import platform
+import getpass
 
 
 LOGIN_URL = 'https://peerfeedback.gatech.edu/login'
@@ -33,7 +36,7 @@ def login():
     password = driver.find_element_by_id('password')
 
     user = input("Enter your Peer Feedback email: ")
-    pswd = input("Enter your Peer Feedback password: ")
+    pswd = getpass.getpass()
 
     username.send_keys(user)
     password.send_keys(pswd)
@@ -45,6 +48,7 @@ def login():
 
 def populate_spreadsheet(assignment, assignments={}):
 
+    print("Populating spreadsheet...")
     path = "assignments/%s/assignments.json" % (assignment)
 
     workbook_path = "assignments/%s/grades.xlsx" % (assignment)
@@ -87,6 +91,7 @@ def populate_spreadsheet(assignment, assignments={}):
 
 def pull_assignments():
     """visits each assigned task, pulls the assignment as feedback_id"""
+    print("Pulling assignments...")
     assignments = []
     links = driver.find_elements_by_xpath("//a[contains(@class, 'taskButton')]")
 
