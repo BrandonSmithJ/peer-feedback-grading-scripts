@@ -1,4 +1,4 @@
-## Peer Feedback Grader Script
+## Peer Feedback Grader Scripts
 
 ### Setup
 
