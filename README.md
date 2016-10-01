@@ -12,9 +12,20 @@ Run: `python3 pull-assignments.py`
 
 Generates the following:
 - `assignments/<assignment-name>`
-- `assignments/<assignment-name>/<assignment-id>.pdf`
+- `assignments/<assignment-name>/<student-feedback-id>.pdf`
 - `assignments/<assignment-name>/assignments.json`
 - `assignments/<assignment-name>/grades.xslx`
+
+#### Output
+```shell
+ • peer-feedback-grading-scripts$ ls assignments/Project 1 (Project Reflections)
+33609.pdf		33701.pdf		33805.pdf		33933.pdf
+33620.pdf		33707.pdf		33823.pdf		33940.pdf
+33627.pdf		33729.pdf		33879.pdf		assignments.json
+33628.pdf		33744.pdf		33895.pdf		grades.xlsx
+33649.pdf		33780.pdf		33908.pdf
+33663.pdf		33800.pdf		33925.pdf
+```
 
 #### assignments.json output:
 ```js
