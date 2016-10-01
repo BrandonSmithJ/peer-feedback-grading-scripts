@@ -1,10 +1,13 @@
 from selenium import webdriver
 from openpyxl.workbook import Workbook
 from openpyxl import load_workbook
+from openpyxl.styles import NamedStyle, Font, Alignment
+
 import datetime
 import urllib.request
 import os, json
 import platform
+
 
 LOGIN_URL = 'https://peerfeedback.gatech.edu/login'
 GRADING_TEMPLATE_PATH = "templates/KBAI PF Grading Template.xltx"
@@ -40,21 +43,41 @@ def login():
 
     return driver
 
-def populate_spreadsheet(assignment, assignments):
+def populate_spreadsheet(assignment, assignments={}):
 
     path = "assignments/%s/assignments.json" % (assignment)
 
     workbook_path = "assignments/%s/grades.xlsx" % (assignment)
     wb = load_workbook(GRADING_TEMPLATE_PATH)
+
     wb.template = False
     ws = wb.active
-    ws['A1'] = 'Generated on %s' % (datetime.datetime.now())
+    ws.page_setup.fitToHeight = 1
+    ws.page_setup.fitToWidth = 1
+
+    center = NamedStyle(name="center")
+    center.font = Font(size=12)
+    center.alignment = Alignment(horizontal="center", vertical="center")
+    wb.add_named_style(center)
 
     start_row = 8
+    end_row = len(assignments) + start_row - 1
+
+    ws['A1'] = 'Generated on %s' % (datetime.datetime.now())
+    ws['B4'] = '=AVERAGE(L%s:L%s)' % (start_row, end_row)
+    ws['C4'] = '=MEDIAN(L%s:L%s)' % (start_row, end_row)
+    ws['D4'] = '=STDEV(L%s:L%s)' % (start_row, end_row)
+
+    for i in range(start_row, end_row + 1):
+        ws['A%s' % i].style = center
+        ws['B%s' % i].style = center
+        ws['L%s' % i].style = center
+
     current_row = start_row
     for assignment in assignments:
-        ws.cell(row=current_row, column=1, value=str(assignment['name']))
-        ws.cell(row=current_row, column=2, value=str(assignment['feedback_id']))
+        ws.cell(row=current_row, column=1, value=assignment['name'])
+        ws.cell(row=current_row, column=2, value=assignment['feedback_id'])
+        ws.cell(row=current_row, column=12, value='=SUM(C%s:K%s)' % (current_row, current_row))
         current_row += 1
 
     wb.save(workbook_path)
