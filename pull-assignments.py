@@ -8,7 +8,6 @@ LOGIN_URL = 'https://peerfeedback.gatech.edu/login'
 
 def login(driver):
     """prompts user to enter username and password to use"""
-    # import pdb;pdb.set_trace()
     driver.get(LOGIN_URL)
 
     username = driver.find_element_by_id('username')
@@ -56,6 +55,5 @@ def process(driver):
 
 if __name__ == "__main__":
     driver = webdriver.Chrome('./chromedriver')
-    # driver = webdriver.PhantomJS('./phantomjs')
     process(driver)
     driver.close()
