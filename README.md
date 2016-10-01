@@ -4,11 +4,16 @@
 
 `pip install -r requirements.txt`
 
-### pull assignments
+### How it works
 
 Once prompted, enter your TA credentials.  A selenium chrome driver will pull the files to the assignments directory for you.  Pulls any current assignments students have submitted.  A JSON dump is also left in the directory for the create-spreadsheet script.
 
 Run: `python3 pull-assignments.py`
+
+Enter credentials:
+
+![screen shot 2016-10-01 at 3 49 45 pm](https://github.gatech.edu/storage/user/4328/files/c632130e-87ee-11e6-8e3f-3d5ad516e4c2)
+
 
 Generates the following:
 - `assignments/<assignment-name>`
