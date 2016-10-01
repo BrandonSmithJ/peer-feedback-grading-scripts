@@ -1,10 +1,35 @@
 ## Peer Feedback Grader Script
 
-This script pulls assignments into a directory called `assignments` with each report stored with the ID of the peerfeedback URL ID.
+### Setup
 
-To run simply run
-`python pull-assignments.py`
+`pip install -r requirements.txt`
 
-And then enter your credentials.  A selenium chrome driver will parse the links and pull the files to the assignments directory for you.
+### pull assignments
 
-> uses python 3
+Once prompted, enter your TA credentials.  A selenium chrome driver will pull the files to the assignments directory for you.  Pulls any current assignments students have submitted.  A JSON dump is also left in the directory for the create-spreadsheet script.
+
+Run: `python3 pull-assignments.py`
+
+Generates the following:
+- `assignments/<assignment-name>`
+- `assignments/<assignment-name>/<assignment-id>.pdf`
+- `assignments/<assignment-name>/assignments.json`
+- `assignments/<assignment-name>/grades.xslx`
+
+#### assignments.json output:
+```js
+[
+    {
+        "name": "Carlitos Yupertino",
+        "feedback_url": "https://peerfeedback.gatech.edu/feedback/1234",
+        "feedback_id": "1234"
+    },
+    //... for each student
+]
+```
+
+#### Generated `grades.xlsx` spreadsheet
+
+![grades-output-example](https://github.gatech.edu/storage/user/4328/files/0118cd62-87ec-11e6-9b26-2d29166918dc)
+
+> Note when opening the spreadsheet you may be prompted to repair, just repair and save and it will open regularly after that.
