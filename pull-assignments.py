@@ -4,6 +4,7 @@ from openpyxl.styles import NamedStyle, Font, Alignment
 
 from lxml.html import fromstring 
 from analysis  import get_weighted_scores 
+from utils     import login 
 
 import datetime
 import os
@@ -13,7 +14,7 @@ import requests
 
 USERNAME    = ''            # if left blank, script will prompt you for it
 PASSWORD    = ''            # if left blank, script will prompt you for it
-DOWNLOAD    = True          # whether to download papers locally or not
+DOWNLOAD    = False          # whether to download papers locally or not
 SHOW_WEIGHT = True          # whether or not to have the 'weighted scores' column displayed
                             # Weighted scores reflect a 'best guess' score for the paper, based
                             # on peerfeed back for the student. Still very rough at the moment,
@@ -21,36 +22,6 @@ SHOW_WEIGHT = True          # whether or not to have the 'weighted scores' colum
 
 BASE_URL = 'https://peerfeedback.gatech.edu'
 GRADING_TEMPLATE_PATH = "templates/KBAI PF Grading Template2.xltx"
-
-
-def login():
-    user, pswd = USERNAME, PASSWORD
-    if not user: user = raw_input("Enter your email: ")
-    if not pswd: pswd = raw_input("Enter your password: ")
-
-    # Initialize session and variables
-    sess = requests.session()
-    resp = sess.post(BASE_URL + '/login_check', verify=False)
-    data = resp.text 
-
-    # Extract csrf token
-    idx   = data.index('name="_csrf_token"')
-    start = data.index('value="', idx) + 7
-    end   = data.index('"', start)
-    csrf  = data[start:end]
-
-    # Log in
-    resp = sess.post(BASE_URL + '/login_check', 
-                     verify=False,
-                     data={ '_username':user, 
-                            '_password':pswd,
-                            '_csrf_token':csrf,
-                            '_submit':'Log in' })
-
-    if 'Your courses and tasks' not in resp.text:
-        raise Exception('Something went wrong; couldn\'t log in')
-
-    return sess
 
 
 def populate_spreadsheet(assignment, assignments={}, weights={}):
@@ -146,13 +117,13 @@ def pull_assignments(sess):
 
     weights = {}
     if SHOW_WEIGHT:
-        weights = get_weighted_scores(sess, assignment_name)
+        weights = get_weighted_scores(assignment_name, sess)
 
     populate_spreadsheet(assignment_name, tasks, weights)
 
 
 def process():
-    sess = login()
+    sess = login(USERNAME, PASSWORD)
     pull_assignments(sess)
 
 if __name__ == "__main__":

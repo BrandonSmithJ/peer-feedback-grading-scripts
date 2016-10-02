@@ -1,105 +1,35 @@
 from collections import defaultdict as dd
-from os.path import exists
-from os import makedirs
-from lxml.html import fromstring
+from utils import fetch_data
 import numpy as np
-import csv
-
-BASE_URL = 'https://peerfeedback.gatech.edu'
-COURSES  = {'online' : '39', 'oncampus' : '40'}
-
-
-def fetch_data(assignment, name='AssignmentData'):
-    ''' Parse & clean data '''
-    directory = './assignments/%s/Data/' % assignment.title()
-    if not exists(directory):
-        makedirs(directory)
-
-    if not exists(directory + name + '_clean.csv'):
-        with open(directory + name + '.csv') as f:
-            data = [line for line in csv.reader(f)]
-        head = data.pop(0)
-
-        # Add fourth student header for the ones which have it
-        head += ['student_score_4','student_comment_4','student_display_id_4']
-
-        # Remove students who did not complete the assignment
-        data = [d for d in data if d[3] == 'Yes']
-
-        # Yan accidently submitted 0
-        if assignment == 'assignment 1':
-            idx = [i for i,d in enumerate(data) if d[0] == 'jmeanor3'][0]
-            data[idx][4] = '34'
-
-        # Rejoin data and quote comments
-        quote_idx = [i for i,h in enumerate(head) if 'comment' in h.lower()]
-        data = [','.join(head)] + \
-               [','.join(['"%s"'%v.replace('"','""') if i in quote_idx else v for i,v in enumerate(d)])
-                for d in data]
-
-
-        with open(directory + name + '_clean.csv', 'w+') as f:
-            f.write('\n'.join(data))
-
-    with open(directory + name + '_clean.csv') as f:
-        return [{k:int(v) if v and 'score' in k.lower() else v for k,v in line.iteritems()}
-                                                               for line in csv.DictReader(f)]
-
-
-def download_spreadsheet(sess, assignment):
-    ''' Download the full class spreadsheet if not already downloaded '''
-    for course in COURSES:
-        found = False
-        filepath = './assignments/%s/Data/' % assignment.title()
-        if not exists(filepath):
-            makedirs(filepath)
-        filename = filepath + course + '_unprocessed_data.csv'
-
-        # Download the full class csv if it doesn't exist
-        if not exists(filename):
-            resp = sess.get(BASE_URL + '/course/' + COURSES[course])
-            page = resp.text
-            tree = fromstring(page)
-            
-            assignment_tbl = tree.xpath('//table[@id="assignmentsList"]')[0]
-            assignment_ele = assignment_tbl.xpath('.//a')
-
-            assignments = []
-            for a in assignment_ele:
-                assignments.append(a.text.lower().strip())
-
-                if assignment.lower().strip() in assignments[-1]:
-                    download_url = BASE_URL+'/data/download'+a.get('href')
-                    resp = sess.get(download_url)
-                    with open(filename, 'wb') as f:
-                        f.write(resp.content)
-                    found = True
-
-            if not found:
-                raise Exception('"%s" was not found; is the name correct?\n'%assignment +
-                                'Available assignments are:\n\t- %s'%'\n\t- '.join(assignments))
-
 
 def analyze_spreadsheet(assignment):
     ''' Analyze an assignment's scores after TA grading is completed '''
+    from glob import glob
     import matplotlib.pyplot as plt
     import matplotlib.mlab   as mlab
 
-    data = fetch_data(assignment, 'online_unprocessed_data') + \
-           fetch_data(assignment, 'oncampus_unprocessed_data')
+    for folder in glob('./assignments/*/'):
+        if assignment.lower() in folder.lower():
+            assignment = folder.split('\\')[1]
+            break
+
+    data = fetch_data(assignment)
 
     TAs = sorted(set([d['TA Name (First and Last)'] for d in data]))
     print 'Number of grading TAs:', len(TAs)
-
-    ta_scores = [d['TA Score'] for d in data]
-    ta_mean   = np.mean(ta_scores)
-    ta_stdev  = np.std(ta_scores)
-    print 'TA average & stdev: %.2f & %.2f' % (ta_mean, ta_stdev)
 
     st_score = [v for d in data for k,v in d.iteritems() if v and 'score' in k]
     st_mean  = np.mean(st_score)
     st_stdev = np.std(st_score)
     print 'Student average & stdev: %.2f & %.2f' % (st_mean, st_stdev)
+
+    ta_scores = [d['TA Score'] for d in data]
+    if not any(ta_scores):
+        print 'Remaining analysis can\'t be completed without TA scores.'
+        return
+    ta_mean   = np.mean(ta_scores)
+    ta_stdev  = np.std(ta_scores)
+    print 'TA average & stdev: %.2f & %.2f' % (ta_mean, ta_stdev)
 
     # Collate the scores each student gave
     st_score = dd(list) 
@@ -222,15 +152,13 @@ def analyze_spreadsheet(assignment):
         features.append(d['TA Score'])
         dataset.append(features)
 
-    with open(assignment.title()+'/dataset.csv', 'w+') as f:
+    with open('assignments/'+assignment.title()+'/dataset.csv', 'w+') as f:
         for d in dataset:
             f.write(','.join([str(v) for v in d]) + '\n')
 
 
-def get_weighted_scores(sess, assignment, ta_mean=34, ta_stdev=3.75):
-    download_spreadsheet(sess, assignment)
-    data = fetch_data(assignment, 'online_unprocessed_data') + \
-           fetch_data(assignment, 'oncampus_unprocessed_data')
+def get_weighted_scores(assignment, sess=None, ta_mean=34, ta_stdev=3.75):
+    data = fetch_data(assignment, sess)
 
     st_score = [v for d in data for k,v in d.iteritems() if v and 'score' in k]
     st_mean  = np.mean(st_score)
@@ -272,4 +200,4 @@ def get_weighted_scores(sess, assignment, ta_mean=34, ta_stdev=3.75):
     return averaged
 
 if __name__ == '__main__':
-    analyze_spreadsheet()
+    analyze_spreadsheet('assignment 1')
