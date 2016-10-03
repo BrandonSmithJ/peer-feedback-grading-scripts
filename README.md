@@ -6,7 +6,7 @@
 
 ### How it works
 
-Once prompted, enter your TA credentials.  A selenium chrome driver will pull the files to the assignments directory for you.  Pulls any current assignments students have submitted.  A JSON dump is also left in the directory for the create-spreadsheet script.
+Once prompted, enter your TA credentials student assignments will be pulled for you.  A JSON dump is also left in the directory for the create-spreadsheet script.
 
 Run: `python3 pull-assignments.py`
 
