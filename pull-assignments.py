@@ -1,57 +1,48 @@
-from selenium import webdriver
-
 from openpyxl.workbook import Workbook
 from openpyxl import load_workbook
 from openpyxl.styles import NamedStyle, Font, Alignment
 
+from lxml.html import fromstring
+from analysis  import get_weighted_scores
+from utils     import login
+
 import datetime
-import urllib.request
 import os
 import json
-import platform
-import getpass
+import yaml
+import requests
 
+def get_secrets():
+    try:
+        with open('secrets.yml', 'r') as file:
+            secrets = yaml.load(file)
+            return secrets['peer-feedback-credentials']
+    except:
+        return {}
 
-LOGIN_URL = 'https://peerfeedback.gatech.edu/login'
+secrets = get_secrets()
+USERNAME = secrets['username'] if secrets else ''
+PASSWORD = secrets['password'] if secrets else ''
+
+# whether to download papers locally or not
+DOWNLOAD = True
+
+# whether or not to have the 'weighted scores' column displayed
+# Weighted scores reflect a 'best guess' score for the paper, based
+# on peerfeed back for the student. Still very rough at the moment,
+# and does poorly on outliers
+SHOW_WEIGHT = True
+
+BASE_URL = 'https://peerfeedback.gatech.edu'
 GRADING_TEMPLATE_PATH = "templates/KBAI PF Grading Template.xltx"
 
 
-def get_driver():
-    if platform.system() == 'Darwin':
-        path = 'chromedrivers/chromedriver-mac'
-    elif platform.system() == 'Linux':
-        path = 'chromedrivers/chromedriver-linux'
-    elif platform.system() == 'Windows':
-        path = 'chromedrivers/chromedriver.exe'
-    return webdriver.Chrome(path)
-
-driver = get_driver()
-
-
-def login():
-    """prompts user to enter username and password to use"""
-    driver.get(LOGIN_URL)
-
-    username = driver.find_element_by_id('username')
-    password = driver.find_element_by_id('password')
-
-    user = input("Enter your Peer Feedback email: ")
-    pswd = getpass.getpass()
-
-    username.send_keys(user)
-    password.send_keys(pswd)
-
-    element = driver.find_element_by_id('_submit')
-    element.submit()
-
-    return driver
-
-def populate_spreadsheet(assignment, assignments={}):
+def populate_spreadsheet(assignment_name, assignments={}, weights={}):
 
     print("Populating spreadsheet...")
-    path = "assignments/%s/assignments.json" % (assignment)
+    path = "assignments/%s/assignments.json" % (assignment_name)
 
-    workbook_path = "assignments/%s/grades.xlsx" % (assignment)
+    workbook_path = "assignments/%s/grades.xlsx" % (assignment_name)
     wb = load_workbook(GRADING_TEMPLATE_PATH)
 
     wb.template = False
@@ -73,9 +64,8 @@ def populate_spreadsheet(assignment, assignments={}):
     ws['D4'] = '=STDEV(K%s:K%s)' % (start_row, end_row)
 
     for i in range(start_row, end_row + 1):
-        ws['A%s' % i].style = center
-        ws['B%s' % i].style = center
-        ws['K%s' % i].style = center
+        for c in ['A', 'B', 'K', 'L', 'M', 'N', 'O']:
+            ws['%s%s' % (c,i)].style = center
 
     current_row = start_row
     for assignment in assignments:
@@ -84,52 +74,82 @@ def populate_spreadsheet(assignment, assignments={}):
         ws.cell(row=current_row, column=11, value='=+IF(SUM(C%s:J%s)=0,"",SUM(C%s:J%s))' % (
             current_row, current_row, current_row, current_row)
         )
+        if SHOW_WEIGHT:
+            try:
+                ws.cell(row=current_row, column=13, value=weights[assignment['name']])
+            except KeyError:
+                pass
+
+        ws.cell(row=current_row, column=14, value=assignment['feedback_url'])
+        ws.cell(row=current_row, column=15, value=assignment['paper_url'])
+        ws.cell(row=current_row, column=16, value=' ') # Make sure url is not extended past col
+
         current_row += 1
 
-    wb.save(workbook_path)
+    if os.path.exists(workbook_path):
+        question = input("Do you wish to overwrite %s?  (y/n)" % (workbook_path))
+        if question == 'y':
+            wb.save(workbook_path)
+        else:
+            wb.save("assignments/%s/grades-new.xlsx" % (assignment_name))
+    else:
+        wb.save(workbook_path)
 
 
-def pull_assignments():
+def pull_assignments(sess):
     """visits each assigned task, pulls the assignment as feedback_id"""
     print("Pulling assignments...")
-    assignments = []
-    links = driver.find_elements_by_xpath("//a[contains(@class, 'taskButton')]")
+    resp = sess.get(BASE_URL)
+    page = resp.text
+    tree = fromstring(page)
 
-    assignment_name = driver.find_element_by_xpath("//div[contains(@class, 'taskCard')]//h4").text
-    os.makedirs('assignments/%s' % (assignment_name), exist_ok=True)
+    assignment_name = tree.xpath("//div[contains(@class, 'taskCard')]//h4")[0].text.title()
+    links = tree.xpath("//a[contains(@class, 'taskButton')]")
+    if not os.path.exists('assignments/%s/Data' % (assignment_name)):
+        os.makedirs('assignments/%s/Data' % (assignment_name))
 
+    tasks = []
     for link in links:
-        feedback_url = link.get_attribute('href')
-        feedback_id = feedback_url.split("feedback/", 1)[1]
-        assignments.append(dict(
-            feedback_id=feedback_id,
-            feedback_url=feedback_url
-        ))
+        pf_link = link.get('href')
+        fb_resp = sess.get(BASE_URL + pf_link)
+        fb_page = fb_resp.text
+        fb_tree = fromstring(fb_page)
+        dl_link = fb_tree.xpath('//h2/a[contains(.,"Download submitted assignment")]')[0].get('href')
+        assert(dl_link)
+        st_name = None
+        for a in fb_tree.xpath('//div[@class="checkbox"]/label/div/a'):
+            if a.text.strip():
+                st_name = a.text.strip()
+                break
+        if st_name is None: assert(0), 'Couldn\'t pull student name'
+        tasks.append({
+            'name': st_name.lower().strip(),
+            'feedback_url': BASE_URL+pf_link,
+            'feedback_id': pf_link.split('/')[-1],
+            'paper_url': dl_link})
 
-    for assignment in assignments:
-        driver.get(assignment['feedback_url'])
-        download_link = driver.find_element_by_xpath("//h2/a")
-        assignment_url = download_link.get_attribute('href')
+        if DOWNLOAD:
+            filepath = 'assignments/%s/Papers/' % assignment_name
+            if not os.path.exists(filepath):
+                os.makedirs(filepath)
+            filename = filepath + st_name.replace(' ', '') + '.pdf'
+            resp = sess.get(dl_link)
+            with open(filename, 'wb') as f:
+                f.write(resp.content)
 
-        # Scrape Student Name
-        form = driver.find_element_by_xpath("//form[contains(@id, 'submitStudentSubmissionCommentForm')]")
-        student_checkbox = form.find_element_by_class_name("checkbox")
-        assignment['name'] = student_checkbox.find_elements_by_tag_name("a")[1].text
+    with open('assignments/%s/Data/assignments.json' % assignment_name, 'w') as file:
+        json.dump(tasks, file)
 
-        path = "assignments/%s/%s.pdf" % (assignment_name, assignment['feedback_id'])
+    weights = {}
+    if SHOW_WEIGHT:
+        weights = get_weighted_scores(assignment_name, sess)
 
-        urllib.request.urlretrieve(assignment_url, path)
-
-    with open('assignments/%s/assignments.json' % assignment_name, 'w') as file:
-        json.dump(assignments, file)
-
-    populate_spreadsheet(assignment_name, assignments)
+    populate_spreadsheet(assignment_name, tasks, weights)
 
 
 def process():
-    login()
-    pull_assignments()
-    driver.close()
+    sess = login(USERNAME, PASSWORD)
+    pull_assignments(sess)
 
 if __name__ == "__main__":
     process()
