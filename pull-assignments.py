@@ -2,34 +2,47 @@ from openpyxl.workbook import Workbook
 from openpyxl import load_workbook
 from openpyxl.styles import NamedStyle, Font, Alignment
 
-from lxml.html import fromstring 
-from analysis  import get_weighted_scores 
-from utils     import login 
+from lxml.html import fromstring
+from analysis  import get_weighted_scores
+from utils     import login
 
 import datetime
 import os
 import json
+import yaml
 import requests
 
+def get_secrets():
+    try:
+        with open('secrets.yml', 'r') as file:
+            secrets = yaml.load(file)
+            return secrets['peer-feedback-credentials']
+    except:
+        return {}
 
-USERNAME    = ''            # if left blank, script will prompt you for it
-PASSWORD    = ''            # if left blank, script will prompt you for it
-DOWNLOAD    = False          # whether to download papers locally or not
-SHOW_WEIGHT = True          # whether or not to have the 'weighted scores' column displayed
-                            # Weighted scores reflect a 'best guess' score for the paper, based
-                            # on peerfeed back for the student. Still very rough at the moment,
-                            # and does poorly on outliers
+secrets = get_secrets()
+USERNAME = secrets['username'] if secrets else ''
+PASSWORD = secrets['password'] if secrets else ''
+
+# whether to download papers locally or not
+DOWNLOAD = True
+
+# whether or not to have the 'weighted scores' column displayed
+# Weighted scores reflect a 'best guess' score for the paper, based
+# on peerfeed back for the student. Still very rough at the moment,
+# and does poorly on outliers
+SHOW_WEIGHT = True
 
 BASE_URL = 'https://peerfeedback.gatech.edu'
-GRADING_TEMPLATE_PATH = "templates/KBAI PF Grading Template2.xltx"
+GRADING_TEMPLATE_PATH = "templates/KBAI PF Grading Template.xltx"
 
 
-def populate_spreadsheet(assignment, assignments={}, weights={}):
+def populate_spreadsheet(assignment_name, assignments={}, weights={}):
 
     print("Populating spreadsheet...")
-    path = "assignments/%s/assignments.json" % (assignment)
+    path = "assignments/%s/assignments.json" % (assignment_name)
 
-    workbook_path = "assignments/%s/grades.xlsx" % (assignment)
+    workbook_path = "assignments/%s/grades.xlsx" % (assignment_name)
     wb = load_workbook(GRADING_TEMPLATE_PATH)
 
     wb.template = False
@@ -61,15 +74,26 @@ def populate_spreadsheet(assignment, assignments={}, weights={}):
         ws.cell(row=current_row, column=11, value='=+IF(SUM(C%s:J%s)=0,"",SUM(C%s:J%s))' % (
             current_row, current_row, current_row, current_row)
         )
-        ws.cell(row=current_row, column=13, value=weights[assignment['name']] 
-                                                  if SHOW_WEIGHT else '')
+        if SHOW_WEIGHT:
+            try:
+                ws.cell(row=current_row, column=13, value=weights[assignment['name']])
+            except KeyError:
+                pass
+
         ws.cell(row=current_row, column=14, value=assignment['feedback_url'])
         ws.cell(row=current_row, column=15, value=assignment['paper_url'])
         ws.cell(row=current_row, column=16, value=' ') # Make sure url is not extended past col
 
         current_row += 1
 
-    wb.save(workbook_path)
+    if os.path.exists(workbook_path):
+        question = input("Do you wish to overwrite %s?  (y/n)" % (workbook_path))
+        if question == 'y':
+            wb.save(workbook_path)
+        else:
+            wb.save("assignments/%s/grades-new.xlsx" % (assignment_name))
+    else:
+        wb.save(workbook_path)
 
 
 def pull_assignments(sess):
@@ -98,16 +122,17 @@ def pull_assignments(sess):
                 st_name = a.text.strip()
                 break
         if st_name is None: assert(0), 'Couldn\'t pull student name'
-        tasks.append({  'name': st_name.lower().strip(),
-                        'feedback_url': BASE_URL+pf_link, 
-                        'feedback_id' : pf_link.split('/')[-1],
-                        'paper_url'   : dl_link})
+        tasks.append({
+            'name': st_name.lower().strip(),
+            'feedback_url': BASE_URL+pf_link,
+            'feedback_id': pf_link.split('/')[-1],
+            'paper_url': dl_link})
 
         if DOWNLOAD:
             filepath = 'assignments/%s/Papers/' % assignment_name
             if not os.path.exists(filepath):
                 os.makedirs(filepath)
-            filename = filepath + st_name.replace(' ','') + '.pdf'
+            filename = filepath + st_name.replace(' ', '') + '.pdf'
             resp = sess.get(dl_link)
             with open(filename, 'wb') as f:
                 f.write(resp.content)
