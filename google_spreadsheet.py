@@ -44,18 +44,19 @@ class Sheet(object):
 
 
 if __name__ == '__main__':
-    spreadsheetId = '1Ed_tyOHhyc-BAPKkcXJRD_R5xZbbb93aPYxNQl8wYbg'
-
-    data =  [
-        ["test_name", "test_ta", "test_comment", "test_1", "test_2", "test_3", "test_4", "test_5", "test_6", "test_7", "test_8", '', 'test_notes'],
-        ["test2_name", "test2_ta", "test2_comment", "test2_1", "tes2t_2", "test2_3", "test2_4", "test2_5", "test2_6", "test2_7", "test2_8", '', 'test2_notes'],
-    ]
-    sheet = Sheet(spreadsheetId)
-    for row in sheet.read((1,5), ('A','M')):
-        print(row)
+    if False: # Set to True for debugging
+        spreadsheetId = '1Ed_tyOHhyc-BAPKkcXJRD_R5xZbbb93aPYxNQl8wYbg'
     
-
-    sheet.write(data)
-
-    for row in sheet.read((1,5), ('A','M')):
-        print(row)
+        data =  [
+            ["test_name", "test_ta", "test_comment", "test_1", "test_2", "test_3", "test_4", "test_5", "test_6", "test_7", "test_8", '', 'test_notes'],
+            ["test2_name", "test2_ta", "test2_comment", "test2_1", "tes2t_2", "test2_3", "test2_4", "test2_5", "test2_6", "test2_7", "test2_8", '', 'test2_notes'],
+        ]
+        sheet = Sheet(spreadsheetId)
+        for row in sheet.read((1,5), ('A','M')):
+            print(row)
+        
+    
+        sheet.write(data)
+    
+        for row in sheet.read((1,5), ('A','M')):
+            print(row)
