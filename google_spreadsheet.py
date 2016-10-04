@@ -52,10 +52,10 @@ if __name__ == '__main__':
     ]
     sheet = Sheet(spreadsheetId)
     for row in sheet.read((1,5), ('A','M')):
-        print row
-    print
+        print(row)
+    
 
     sheet.write(data)
 
     for row in sheet.read((1,5), ('A','M')):
-        print row
+        print(row)
