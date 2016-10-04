@@ -39,7 +39,7 @@ def submit():
     
 def main():
     assert(TA_NAME), 'Need to enter your TA Name in this script'
-    resp = raw_input('Submit current grades with:\nGoogle spreadsheet:'+
+    resp = input('Submit current grades with:\nGoogle spreadsheet:'+
                      ' %s\nAssignment: %s\nTA: %s \ny/n?'%(SHEET_ID, ASSIGNMENT, TA_NAME))
     if resp != 'y': return
     submit()
