@@ -1,5 +1,6 @@
 from oauth2client.service_account import ServiceAccountCredentials as SAC
 from apiclient import discovery
+from os.path import exists
 import httplib2
 import string
 
@@ -10,6 +11,8 @@ class Sheet(object):
 
     def __init__(self, sheet_id):
         ''' Authenticate with a service account '''
+        if not exists(self.sac_file):
+            raise Exception('Need a service account file - check the TA slack channel for it')
         credentials = SAC.from_json_keyfile_name(self.sac_file,
             scopes=['https://www.googleapis.com/auth/spreadsheets']
         )
