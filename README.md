@@ -59,6 +59,6 @@ optional arguments:
   --assignment ASSIGNMENT   Which assignment to submit
   --name NAME               TA which program should submit for
   --sheetid SHEETID         Google spreadsheet id program should submit to
-
+```
 
 Alternatively, you can choose to enter the information at the program's prompt. Finally, there will be a confirmation ensuring the information is correct before submitting.
