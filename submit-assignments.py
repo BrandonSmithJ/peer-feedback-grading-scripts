@@ -2,10 +2,21 @@ from google_spreadsheet import Sheet
 from glob import glob
 from os.path import exists
 from openpyxl import load_workbook
+import yaml
+
+def get_ta_name():
+    try:
+        with open('secrets.yml', 'r') as file:
+            secrets = yaml.load(file)
+            return secrets['spreadsheet-information']['ta-name']
+    except:
+        return ''
 
 SHEET_ID   = '1Ed_tyOHhyc-BAPKkcXJRD_R5xZbbb93aPYxNQl8wYbg'
 ASSIGNMENT = 'project 1'
-TA_NAME = ''
+TA_NAME = get_ta_name()
+
+
 
 def submit():
     ''' Submit all grades in the grades.xlsx file to 
