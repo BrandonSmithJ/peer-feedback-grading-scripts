@@ -2,7 +2,7 @@ from google_spreadsheet import Sheet
 from glob import glob
 from os.path import exists
 from openpyxl import load_workbook
-import yaml, argparse
+import yaml, argparse, sys
 
 # The sheet id is found at the end of the spread sheet url
 # If this is the url, for example:
@@ -62,17 +62,20 @@ def main():
     parser.add_argument('--sheetid', help="Google spreadsheet id program should submit to")
     args = parser.parse_args()
 
+    if (sys.version_info > (3, 0)): input_f = input # python3
+    else:                           input_f = raw_input # python2
+
     ta_name = get_ta_name()
     if not ta_name:
-        ta_name = args.name if args.name else input('TA Name: ')
+        ta_name = args.name if args.name else input_f('TA Name: ')
 
-    assignment = args.assignment if args.assignment else input('Assigment to submit: ')
+    assignment = args.assignment if args.assignment else input_f('Assigment to submit: ')
 
     sheet_id = SHEET_ID
     if not SHEET_ID:
-        sheet_id = args.sheetid if args.sheetid else input('Google Spreadsheet ID: ')
+        sheet_id = args.sheetid if args.sheetid else input_f('Google Spreadsheet ID: ')
 
-    resp = input('\nSubmit current grades with vars:\n- Google spreadsheet: '+
+    resp = input_f('\nSubmit current grades with vars:\n- Google spreadsheet: '+
                 '%s\n- Assignment: %s\n- TA: %s \ny/n?'%(sheet_id, assignment, ta_name))
     if resp != 'y': return
     submit(ta_name, assignment, sheet_id)

@@ -18,7 +18,7 @@ def analyze_spreadsheet(assignment):
     TAs = sorted(set([d['TA Name (First and Last)'] for d in data]))
     print('Number of grading TAs:', len(TAs))
 
-    st_score = [v for d in data for k,v in d.items() if v and 'score' in k]
+    st_score = [d[k] for d in data for k in d if d[k] and 'score' in k]
     st_mean  = np.mean(st_score)
     st_stdev = np.std(st_score)
     print('Student average & stdev: %.2f & %.2f' % (st_mean, st_stdev))
@@ -85,7 +85,7 @@ def analyze_spreadsheet(assignment):
 
     # Sanity check to ensure scores were properly normalized
     for data in [individual, together, averaged]:
-        data  = [v for d in data for k,v in d.items() if v and 'score' in k]
+        data  = [d[k] for d in data for k in d if d[k] and 'score' in k]
         mean  = np.mean(data)
         stdev = np.std(data)
         assert(abs(mean - ta_mean) < 1e3 and abs(stdev - ta_stdev) < 1e3), \
@@ -160,7 +160,7 @@ def analyze_spreadsheet(assignment):
 def get_weighted_scores(assignment, sess=None, ta_mean=34, ta_stdev=3.75):
     data = fetch_data(assignment, sess)
 
-    st_score = [v for d in data for k,v in d.items() if v and 'score' in k]
+    st_score = [d[k] for d in data for k in d if d[k] and 'score' in k]
     st_mean  = np.mean(st_score)
     st_stdev = np.std(st_score)
 
@@ -174,7 +174,7 @@ def get_weighted_scores(assignment, sess=None, ta_mean=34, ta_stdev=3.75):
                 st_score[uid].append(score)
 
     # Calculate mean & stdev for each student
-    stats = {k:(np.mean(v), np.std(v)) for k,v in st_score.items()}
+    stats = {k:(np.mean(st_score[k]), np.std(st_score[k])) for k in st_score}
 
     # Create new scores based on normalized student scores
     averaged = {}

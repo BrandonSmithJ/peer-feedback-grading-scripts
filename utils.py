@@ -6,6 +6,7 @@ import requests
 import csv
 import yaml
 
+
 # Disable verify warnings; can't verify due to peerfeedback ssl certificate issues
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -25,7 +26,10 @@ def secrets():
 
 def login(USERNAME='', PASSWORD=''):
     user, pswd = USERNAME, PASSWORD
-    if not user: user = input("Enter your email: ")
+    if (sys.version_info > (3, 0)): input_f = input # python3
+    else:                           input_f = raw_input # python2
+
+    if not user: user = input_f("Enter your email: ")
     if not pswd: pswd = getpass.getpass()
 
     # Initialize session and variables
@@ -96,9 +100,9 @@ def fetch_data(assignment, sess=None):
 
         with open(directory + name + '_clean.csv') as f:
             results += [{
-                k: int(v)
-                if v and 'score' in k.lower() else v
-                    for k, v in line.items()}
+                k: int(line[k])
+                if line[k] and 'score' in k.lower() else line[k]
+                    for k in line}
                 for line in csv.DictReader(f)
             ]
     return results
