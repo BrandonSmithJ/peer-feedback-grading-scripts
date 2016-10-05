@@ -4,8 +4,11 @@ from lxml.html  import fromstring
 import getpass
 import requests
 import csv
+<<<<<<< HEAD
 import yaml
 
+=======
+>>>>>>> Removed python2 checks
 
 # Disable verify warnings; can't verify due to peerfeedback ssl certificate issues
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -33,10 +36,8 @@ def secrets():
 
 def login(USERNAME='', PASSWORD=''):
     user, pswd = USERNAME, PASSWORD
-    if (sys.version_info > (3, 0)): input_f = input # python3
-    else:                           input_f = raw_input # python2
 
-    if not user: user = input_f("Enter your email: ")
+    if not user: user = input("Enter your email: ")
     if not pswd: pswd = getpass.getpass()
 
     # Initialize session and variables

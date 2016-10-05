@@ -10,7 +10,6 @@ import datetime
 import os
 import json
 import requests
-import sys
 
 
 BASE_URL = 'https://peerfeedback.gatech.edu'
@@ -90,7 +89,7 @@ def populate_spreadsheet(assignment_name, assignments={}):
 
     print('Saving grades to %s' % workbook_path)
     if os.path.exists(workbook_path):
-        question = input('Do you wish to overwrite %s? (y/n)' % workbook_path)
+        question = input("Do you wish to overwrite %s?  (y/n)" % (workbook_path))
 
         if question == 'y':
             wb.save(workbook_path)
