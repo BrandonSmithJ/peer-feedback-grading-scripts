@@ -11,6 +11,13 @@ import yaml
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+
+# If true, overwrites already downloaded class CSVs;
+# necessary if they're pull prior to peer feedbacks by 
+# students being completed, as well as for TA scores after
+# grading is completed (for analysis.py)
+OVERWRITE = True
+
 BASE_URL = 'https://peerfeedback.gatech.edu'
 COURSES  = {'online': '39', 'oncampus': '40'}
 
@@ -65,8 +72,8 @@ def fetch_data(assignment, sess=None):
         if not exists(directory):
             makedirs(directory)
 
-        if not exists(directory + name + 'data_clean.csv'):
-            if not exists(directory + name + '_unprocessed_data.csv'):
+        if not exists(directory + name + 'data_clean.csv') or OVERWRITE: # Overwrite in case of new data
+            if not exists(directory + name + '_unprocessed_data.csv') or OVERWRITE: # Overwrite in case of new data
                 if sess is None: sess = login()
                 download_spreadsheet(sess, assignment)
 
@@ -118,7 +125,7 @@ def download_spreadsheet(sess, assignment):
         filename = filepath + course + '_unprocessed_data.csv'
 
         # Download the full class csv if it doesn't exist
-        if not exists(filename):
+        if not exists(filename) or OVERWRITE:
             resp = sess.get(BASE_URL + '/course/' + COURSES[course])
             page = resp.text
             tree = fromstring(page)
