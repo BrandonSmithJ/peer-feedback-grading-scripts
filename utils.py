@@ -4,6 +4,7 @@ from lxml.html  import fromstring
 import getpass
 import requests
 import csv
+import yaml
 
 # Disable verify warnings; can't verify due to peerfeedback ssl certificate issues
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -11,6 +12,15 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 BASE_URL = 'https://peerfeedback.gatech.edu'
 COURSES  = {'online': '39', 'oncampus': '40'}
+
+
+def secrets():
+    try:
+        with open('secrets.yml', 'r') as file:
+            secrets = yaml.load(file)
+            return secrets['peer-feedback-credentials']
+    except:
+        return {}
 
 
 def login(USERNAME='', PASSWORD=''):
