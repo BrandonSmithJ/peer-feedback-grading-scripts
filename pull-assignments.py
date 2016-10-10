@@ -148,7 +148,7 @@ def pull_assignments(session):
         if not os.path.exists(filepath):
             os.makedirs(filepath)
         filename = filepath + st_name.replace(' ', '') + '.pdf'
-        if not exists(filename):
+        if not os.path.exists(filename):
             resp = session.get(dl_link)
             with open(filename, 'wb') as f:
                 f.write(resp.content)
