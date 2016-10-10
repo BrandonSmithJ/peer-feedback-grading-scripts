@@ -148,9 +148,10 @@ def pull_assignments(session):
         if not os.path.exists(filepath):
             os.makedirs(filepath)
         filename = filepath + st_name.replace(' ', '') + '.pdf'
-        resp = session.get(dl_link)
-        with open(filename, 'wb') as f:
-            f.write(resp.content)
+        if not exists(filename):
+            resp = session.get(dl_link)
+            with open(filename, 'wb') as f:
+                f.write(resp.content)
 
     with open('assignments/%s/Data/assignments.json' % assignment_name, 'w') as file:
         json.dump(tasks, file)
