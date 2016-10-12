@@ -4,26 +4,15 @@ from lxml.html  import fromstring
 import getpass
 import requests
 import csv
-<<<<<<< HEAD
 import yaml
 
-=======
->>>>>>> Removed python2 checks
 
 # Disable verify warnings; can't verify due to peerfeedback ssl certificate issues
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-
-# If true, overwrites already downloaded class CSVs;
-# necessary if they're pull prior to peer feedbacks by 
-# students being completed, as well as for TA scores after
-# grading is completed (for analysis.py)
-OVERWRITE = True
-
 BASE_URL = 'https://peerfeedback.gatech.edu'
 COURSES  = {'online': '39', 'oncampus': '40'}
-
 
 def secrets():
     try:
@@ -33,8 +22,11 @@ def secrets():
     except:
         return {}
 
+USERNAME = secrets()['username'] if secrets() else ''
+PASSWORD = secrets()['password'] if secrets() else ''
 
-def login(USERNAME='', PASSWORD=''):
+
+def login():
     user, pswd = USERNAME, PASSWORD
 
     if not user: user = input("Enter your email: ")
@@ -65,7 +57,7 @@ def login(USERNAME='', PASSWORD=''):
     return sess
 
 
-def fetch_data(assignment, sess=None):
+def fetch_data(assignment, sess=None, overwrite=True):
     ''' Parse & clean data '''
     results = []
     for name in COURSES:
@@ -73,10 +65,10 @@ def fetch_data(assignment, sess=None):
         if not exists(directory):
             makedirs(directory)
 
-        if not exists(directory + name + 'data_clean.csv') or OVERWRITE: # Overwrite in case of new data
-            if not exists(directory + name + '_unprocessed_data.csv') or OVERWRITE: # Overwrite in case of new data
+        if not exists(directory + name + 'data_clean.csv') or overwrite: 
+            if not exists(directory + name + '_unprocessed_data.csv') or overwrite:
                 if sess is None: sess = login()
-                download_spreadsheet(sess, assignment)
+                download_spreadsheet(sess, assignment, overwrite)
 
             with open(directory + name + '_unprocessed_data.csv') as f:
                 data = [line for line in csv.reader(f)]
@@ -89,7 +81,7 @@ def fetch_data(assignment, sess=None):
             data = [d for d in data if d[3] == 'Yes']
 
             # Yan accidently submitted 0
-            if assignment == 'assignment 1':
+            if assignment.lower() == 'assignment 1':
                 idx = [i for i,d in enumerate(data) if d[0] == 'jmeanor3']
                 if idx:
                     data[idx[0]][4] = '34'
@@ -116,7 +108,7 @@ def fetch_data(assignment, sess=None):
     return results
 
 
-def download_spreadsheet(sess, assignment):
+def download_spreadsheet(sess, assignment, overwrite=True):
     ''' Download the full class spreadsheet if not already downloaded '''
     for course in COURSES:
         found = False
@@ -126,7 +118,7 @@ def download_spreadsheet(sess, assignment):
         filename = filepath + course + '_unprocessed_data.csv'
 
         # Download the full class csv if it doesn't exist
-        if not exists(filename) or OVERWRITE:
+        if not exists(filename) or overwrite:
             resp = sess.get(BASE_URL + '/course/' + COURSES[course])
             page = resp.text
             tree = fromstring(page)

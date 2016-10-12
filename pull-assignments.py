@@ -4,7 +4,7 @@ from openpyxl.styles import NamedStyle, Font, Alignment
 
 from lxml.html import fromstring
 from analysis  import get_weighted_scores
-from utils     import login, secrets
+from utils     import login
 
 import datetime
 import os
@@ -21,9 +21,6 @@ ASSIGNMENT_LINK_XPATH = '//h2/a[contains(.,"Download submitted assignment")]'
 ASSIGNMENT_LINKS_XPATH = '//a[contains(@class, "taskButton")]'
 RUBRIC_TABLE_XPATH = '//table[contains(@class, "rubricView")]'
 STUDENT_NAME_XPATH = '//div[@class="checkbox"]/label/div/a'
-
-USERNAME = secrets()['username'] if secrets() else ''
-PASSWORD = secrets()['password'] if secrets() else ''
 
 
 def populate_spreadsheet(assignment_name, assignments={}):
@@ -107,7 +104,7 @@ def pull_assignments(session):
 
     assignment_name = tree.xpath(ASSIGNMENT_NAME_XPATH)[0].text.title()
 
-    print('Pulling assignments for %s as %s...' % (assignment_name, USERNAME))
+    print('Pulling assignments for %s...' % (assignment_name))
 
     links = tree.xpath(ASSIGNMENT_LINKS_XPATH)
 
@@ -170,7 +167,7 @@ def pull_assignments(session):
 
 
 def process():
-    session = login(USERNAME, PASSWORD)
+    session = login()
     pull_assignments(session)
 
 if __name__ == "__main__":
