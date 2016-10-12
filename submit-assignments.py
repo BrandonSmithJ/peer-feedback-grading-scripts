@@ -15,6 +15,9 @@ import yaml, argparse
 SHEET_ID = ''
 BASE_URL = 'https://peerfeedback.gatech.edu'
 
+RUBRIC_TABLE_XPATH = '//table[contains(@class, "rubricView") and '+
+                         'not(contains(@id, "viewonly"))]'
+RUBRIC_IDS_XPATH = './/td[contains(@class, "rubric-element")]'
 
 def get_ta_name():
     try:
@@ -60,8 +63,7 @@ def pf_submit(rows):
             page = resp.text
             tree = fromstring(page)
     
-            table = tree.xpath('//table[contains(@class, "rubricView") and '+
-                                   'not(contains(@id, "viewonly"))]')
+            table = tree.xpath(RUBRIC_TABLE_XPATH)
             assert(len(table) == 1), 'Multiple submission tables found..'
 
             rows  = table[0].xpath('.//tr')
@@ -69,7 +71,7 @@ def pf_submit(rows):
             
             for i, row in enumerate(rows):
                 ids = [td.get('data-rubric-element-combined-id') for td in 
-                        row.xpath('.//td[contains(@class, "rubric-element")]')]
+                        row.xpath(RUBRIC_IDS_XPATH)]
                 assert(len(ids) == 5), '%i criteria found; should be 5?'
 
                 data['rubricElements[%s]' % ids[scores[i] - 1]] = 'true'
