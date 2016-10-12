@@ -80,12 +80,6 @@ def fetch_data(assignment, sess=None, overwrite=True):
             # Remove students who did not complete the assignment
             data = [d for d in data if d[3] == 'Yes']
 
-            # Yan accidently submitted 0
-            if assignment.lower() == 'assignment 1':
-                idx = [i for i,d in enumerate(data) if d[0] == 'jmeanor3']
-                if idx:
-                    data[idx[0]][4] = '34'
-
             # Rejoin data and quote comments
             quote_idx = [i for i,h in enumerate(head) if 'comment' in h.lower()]
             data = [','.join(head)] + \

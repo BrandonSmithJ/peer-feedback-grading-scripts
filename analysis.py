@@ -6,7 +6,19 @@ from itertools import groupby
 import numpy as np
 import warnings
 
+TA_MEAN   = 34    # Change this to be in line with the current assignment
+TA_STDEV  = 3.75  # Change this if you think it should be different for the current assignment
+TA_LAMBDA = 3.45  # Don't change this unless you know what you're doing - 
+                  # requires determining the lambda parameter for Box-Cox transformation
+
+ASSIGNMENT = 'project 1' # Which assignment to run the analysis on. Only
+                         # pertains to analyze_spreadsheet function
+OVERWRITE = True # Only need to set to true for the first run of this script
+                 # if you're previously downloaded (an old version of) the data
 '''
+-------------------------
+-- Future Improvements --
+-------------------------
 - If a student's score is, say, three low scores - but the papers
 they graded were terrible, adjusting their average score to 
 the TA average will skew the bad papers' grades. Need to adjust
@@ -93,6 +105,7 @@ def get_student_scores(entry):
 def analyze_spreadsheet(assignment):
     ''' Analyze an assignment's scores after TA grading is completed '''
     from glob import glob
+    from scipy.stats import ks_2samp
     import matplotlib.pyplot as plt
     import matplotlib.mlab   as mlab
 
@@ -101,9 +114,9 @@ def analyze_spreadsheet(assignment):
             assignment = folder.split('\\')[1]
             break
 
-    data = fetch_data(assignment, overwrite=False)
+    data = fetch_data(assignment, overwrite=OVERWRITE)
     exclude =[]
-    data = [d for d in data if d['TA Name (First and Last)'] not in exclude]
+    data = [d for d in data if d['TA Name (First and Last)'] not in exclude and d['TA Score']]
     TAs = sorted(set([d['TA Name (First and Last)'] for d in data]))
     print('Number of grading TAs: %i' % len(TAs))
 
@@ -256,7 +269,6 @@ def analyze_spreadsheet(assignment):
     ssreg = np.sum((yhat - ybar)**2)
     sstot = np.sum((st_scores - ybar)**2)
     print 'R^2:',ssreg/sstot
-    from scipy.stats import ks_2samp
     ks = ks_2samp(st_scores, [t for _,t in ta_scores])
     s  = ks.statistic
     pv = ks.pvalue
@@ -347,7 +359,7 @@ def analyze_spreadsheet(assignment):
             f.write(','.join([str(v) for v in d]) + '\n')
 
 
-def get_weighted_scores(assignment, sess=None, ta_mean=34, ta_stdev=3.75, lambda_=3.45):
+def get_weighted_scores(assignment, sess=None, ta_mean=TA_MEAN, ta_stdev=TA_STDEV, lambda_=TA_LAMBDA):
     
     @ensure_matrix
     def normalize_transform(data):
@@ -439,4 +451,4 @@ def get_weighted_scores(assignment, sess=None, ta_mean=34, ta_stdev=3.75, lambda
     return averaged
 
 if __name__ == '__main__':
-    analyze_spreadsheet('project 1')
+    analyze_spreadsheet(ASSIGNMENT)

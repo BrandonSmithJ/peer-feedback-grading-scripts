@@ -44,9 +44,12 @@ def gs_submit(ta_name, rows, sheet_id):
             for d in data]
     data = [[str(d) for d in row] for row in data]
 
-    sheet = Sheet(sheet_id)
-    sheet.write(data)
-    
+    try:
+        sheet = Sheet(sheet_id)
+        sheet.write(data)
+    except Exception as e:
+        print e # Almost certainly occurs because of missing authentication file
+
 
 def pf_submit(rows):
     session = login()
