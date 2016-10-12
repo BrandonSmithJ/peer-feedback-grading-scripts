@@ -6,13 +6,13 @@ import requests
 import csv
 import yaml
 
+
 # Disable verify warnings; can't verify due to peerfeedback ssl certificate issues
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 BASE_URL = 'https://peerfeedback.gatech.edu'
 COURSES  = {'online': '39', 'oncampus': '40'}
-
 
 def secrets():
     try:
@@ -22,9 +22,13 @@ def secrets():
     except:
         return {}
 
+USERNAME = secrets()['username'] if secrets() else ''
+PASSWORD = secrets()['password'] if secrets() else ''
 
-def login(USERNAME='', PASSWORD=''):
+
+def login():
     user, pswd = USERNAME, PASSWORD
+
     if not user: user = input("Enter your email: ")
     if not pswd: pswd = getpass.getpass()
 
@@ -53,7 +57,7 @@ def login(USERNAME='', PASSWORD=''):
     return sess
 
 
-def fetch_data(assignment, sess=None):
+def fetch_data(assignment, sess=None, overwrite=True):
     ''' Parse & clean data '''
     results = []
     for name in COURSES:
@@ -61,10 +65,10 @@ def fetch_data(assignment, sess=None):
         if not exists(directory):
             makedirs(directory)
 
-        if not exists(directory + name + 'data_clean.csv'):
-            if not exists(directory + name + '_unprocessed_data.csv'):
+        if not exists(directory + name + 'data_clean.csv') or overwrite: 
+            if not exists(directory + name + '_unprocessed_data.csv') or overwrite:
                 if sess is None: sess = login()
-                download_spreadsheet(sess, assignment)
+                download_spreadsheet(sess, assignment, overwrite)
 
             with open(directory + name + '_unprocessed_data.csv') as f:
                 data = [line for line in csv.reader(f)]
@@ -75,12 +79,6 @@ def fetch_data(assignment, sess=None):
 
             # Remove students who did not complete the assignment
             data = [d for d in data if d[3] == 'Yes']
-
-            # Yan accidently submitted 0
-            if assignment == 'assignment 1':
-                idx = [i for i,d in enumerate(data) if d[0] == 'jmeanor3']
-                if idx:
-                    data[idx[0]][4] = '34'
 
             # Rejoin data and quote comments
             quote_idx = [i for i,h in enumerate(head) if 'comment' in h.lower()]
@@ -96,15 +94,15 @@ def fetch_data(assignment, sess=None):
 
         with open(directory + name + '_clean.csv') as f:
             results += [{
-                k: int(v)
-                if v and 'score' in k.lower() else v
-                    for k, v in line.items()}
+                k: int(line[k])
+                if line[k] and 'score' in k.lower() else line[k]
+                    for k in line}
                 for line in csv.DictReader(f)
             ]
     return results
 
 
-def download_spreadsheet(sess, assignment):
+def download_spreadsheet(sess, assignment, overwrite=True):
     ''' Download the full class spreadsheet if not already downloaded '''
     for course in COURSES:
         found = False
@@ -114,7 +112,7 @@ def download_spreadsheet(sess, assignment):
         filename = filepath + course + '_unprocessed_data.csv'
 
         # Download the full class csv if it doesn't exist
-        if not exists(filename):
+        if not exists(filename) or overwrite:
             resp = sess.get(BASE_URL + '/course/' + COURSES[course])
             page = resp.text
             tree = fromstring(page)

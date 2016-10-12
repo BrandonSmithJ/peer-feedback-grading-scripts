@@ -44,9 +44,9 @@ Generates the following:
 
 ### Submission
 
-#### Google Spreadsheet 
+#### Google Spreadsheet & PeerFeedback 
 
-Run submit-assignment.py to add your grades.xlsx to the master google spreadsheet:
+Run submit-assignment.py to add your grades.xlsx to the master google spreadsheet, and **partially*** submit on peerfeedback:
 
 ```shell
 > python submit-assignments.py -h
@@ -62,3 +62,5 @@ optional arguments:
 ```
 
 Alternatively, you can choose to enter the information at the program's prompt. Finally, there will be a confirmation ensuring the information is correct before submitting.
+
+*Partially meaning, the script will populate all scores and comments, but you as the user still need to view each task and click the 'submit' button for the final submission. This is done to ensure any errors are caught before the final submission (on the part of the script _or_ the user). 
