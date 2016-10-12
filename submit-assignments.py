@@ -74,7 +74,7 @@ def pf_submit(rows):
 
                 data['rubricElements[%s]' % ids[scores[i] - 1]] = 'true'
                 
-            session.post(BASE_URL+'/drafts/34308/', verify=False, data=data)
+            session.post(BASE_URL+'/drafts/%s/'%row[1].internal_value, verify=False, data=data)
 
     
 def main():
