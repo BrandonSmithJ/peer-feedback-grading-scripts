@@ -44,7 +44,7 @@ These numbers are also dependent on the TAs, as excluding outliers leads to a be
 
 ![without_outliers_both](https://github.gatech.edu/storage/user/7113/files/28c51888-908a-11e6-8ed0-5a752d47b97c)
 
-Clearly the weighted scores are still extremely noisy, though a definite pattern exists which can be used. The null hypothesis (that student & TA scores are from different distributions) is rejected with pvalue >> .01.
+Clearly the weighted scores are still extremely noisy, though a definite pattern exists which can be used. The null hypothesis (that student & TA scores are from the same distributions) cannot be rejected (pvalue >> .01).
 
 To summarize, these scores offer a rough guideline as to how to score a paper - not at all to be taken as a final value. Future improvements to this score are suggested in analysis.py.
 
