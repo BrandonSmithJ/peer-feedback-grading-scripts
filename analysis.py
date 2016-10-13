@@ -8,7 +8,7 @@ import warnings
 
 TA_MEAN   = 34    # Change this to be in line with the current assignment
 TA_STDEV  = 3.75  # Change this if you think it should be different for the current assignment
-TA_LAMBDA = 3.45  # Don't change this unless you know what you're doing - 
+TA_LAMBDA = 3.45  # Don't change this unless you know what you're doing -
                   # requires determining the lambda parameter for Box-Cox transformation
 
 ASSIGNMENT = 'project 1' # Which assignment to run the analysis on. Only
@@ -20,13 +20,13 @@ OVERWRITE = True # Only need to set to true for the first run of this script
 -- Future Improvements --
 -------------------------
 - If a student's score is, say, three low scores - but the papers
-they graded were terrible, adjusting their average score to 
+they graded were terrible, adjusting their average score to
 the TA average will skew the bad papers' grades. Need to adjust
 their score in relation to the rank/adjusted score, then recalculate
-the scores. So a two-pass in other words? Or switch to ranking system, 
-or perhaps generalizing the two-pass: n-pass until scores stabilize 
+the scores. So a two-pass in other words? Or switch to ranking system,
+or perhaps generalizing the two-pass: n-pass until scores stabilize
 i.e. a simulated annealing type approach -> energy defined as distance
-    of everyone from their respective average score, given the current 
+    of everyone from their respective average score, given the current
     weighted scores
 
 - add in boolean flag to spreadsheet to check if ta score differs by more than a stdev
@@ -134,7 +134,7 @@ def analyze_spreadsheet(assignment):
     ta_mean, ta_stdev, ta_skew, ta_kurt = distribution_stats(ta_scores)
 
     indexed_scores = [(i, d[k] if d[k] else ta_mean) for i,d in enumerate(data) for k in ['student_score_%i' % j for j in range(1,5)] if k in d and d[k] is not None]
-    idxs, scores   = [ix[0] for ix in indexed_scores], [ix[1] for ix in indexed_scores]    
+    idxs, scores   = [ix[0] for ix in indexed_scores], [ix[1] for ix in indexed_scores]
     ks_transform = ks_align(scores, ta_scores)
     ks_transform = zip(idxs, ks_transform)
 
@@ -147,7 +147,7 @@ def analyze_spreadsheet(assignment):
         else:
             transformed.append(curr)
             curr = [score]
-            idx = i 
+            idx = i
     if curr:
         transformed.append(curr)
 
@@ -181,7 +181,7 @@ def analyze_spreadsheet(assignment):
     weights = {}
     for s in st_score:
         if st_score[s]:
-            ks   = ks_align(st_score[s], ta_scores) 
+            ks   = ks_align(st_score[s], ta_scores)
             mean = np.mean(st_score[s])
             std  = np.std(st_score[s])
         else:
@@ -219,8 +219,8 @@ def analyze_spreadsheet(assignment):
                 avg = np.mean([avg, ks_norm2, ks_norm if ks_norm else avg])
 
                 individual[-1]['student_score_%i' % i] = ind
-                together[-1]['student_score_%i' % i] = tog 
-                averaged[-1]['student_score_%i' % i] = avg 
+                together[-1]['student_score_%i' % i] = tog
+                averaged[-1]['student_score_%i' % i] = avg
 
 
     D = averaged
@@ -242,7 +242,7 @@ def analyze_spreadsheet(assignment):
             if k in a and a[k] is not None:
                 a[k] = scores[i]
                 inc = 1
-        i += inc 
+        i += inc
         inc = 0
 
     D = averaged
@@ -252,7 +252,7 @@ def analyze_spreadsheet(assignment):
     st_scores = get_weighted_scores(assignment)
     st_scores = [st_scores[(d['First Name (Student)'].strip() + ' ' + d['Last Name (Student)'].strip()).lower()] for d in ta_scores]
 
-    ta_scores = [(i,d['TA Score']) for i,d in enumerate(ta_scores)]    
+    ta_scores = [(i,d['TA Score']) for i,d in enumerate(ta_scores)]
     ta_scores = sorted(ta_scores, key=lambda x:x[1])
     # idxs = [t for t,_ in scores]
 
@@ -361,7 +361,7 @@ def analyze_spreadsheet(assignment):
 
 
 def get_weighted_scores(assignment, sess=None, ta_mean=TA_MEAN, ta_stdev=TA_STDEV, lambda_=TA_LAMBDA):
-    
+
     @ensure_matrix
     def normalize_transform(data):
         mean = data.mean()
@@ -376,7 +376,7 @@ def get_weighted_scores(assignment, sess=None, ta_mean=TA_MEAN, ta_stdev=TA_STDE
 
     def transform_group(score_dict):
         ''' Flatten dict of scores, transform, then regroup '''
-        indexed      = [[i, uid, score] for uid in score_dict 
+        indexed      = [[i, uid, score] for uid in score_dict
                                         for i,score in enumerate(score_dict[uid])]
         idxs, scores = [ix[:2] for ix in indexed], [ix[2] for ix in indexed]
         transformed  = [i+[k] for i,k in zip(idxs, bc_transform(scores))]
@@ -438,7 +438,7 @@ def get_weighted_scores(assignment, sess=None, ta_mean=TA_MEAN, ta_stdev=TA_STDE
                 avg = (ind + tog) / 2.
 
                 bc_ind = bc_ind[score] if bc_ind[score] else avg
-                bc_tog = bc_tog[score] 
+                bc_tog = bc_tog[score]
 
                 final = np.mean([avg, bc_ind, bc_tog])
                 scores.append(final)
