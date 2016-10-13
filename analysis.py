@@ -269,7 +269,7 @@ def analyze_spreadsheet(assignment):
     ybar = np.sum(st_scores)/float(len(st_scores))
     ssreg = np.sum((yhat - ybar)**2)
     sstot = np.sum((st_scores - ybar)**2)
-    print 'R^2:',ssreg/sstot
+    print('R^2:%s' % ssreg/sstot)
     ks = ks_2samp(st_scores, [t for _,t in ta_scores])
     s  = ks.statistic
     pv = ks.pvalue
