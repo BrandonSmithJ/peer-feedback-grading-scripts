@@ -15,7 +15,7 @@ import yaml, argparse
 SHEET_ID = ''
 BASE_URL = 'https://peerfeedback.gatech.edu'
 
-RUBRIC_TABLE_XPATH = '//table[contains(@class, "rubricView") and '+
+RUBRIC_TABLE_XPATH = '//table[contains(@class, "rubricView") and '+\
                          'not(contains(@id, "viewonly"))]'
 RUBRIC_IDS_XPATH = './/td[contains(@class, "rubric-element")]'
 
@@ -72,9 +72,9 @@ def pf_submit(rows):
             rows  = table[0].xpath('.//tr')
             assert(len(rows) == len(scores)), 'Different number of rubric items; should be 8?'
             
-            for i, row in enumerate(rows):
+            for i, r in enumerate(rows):
                 ids = [td.get('data-rubric-element-combined-id') for td in 
-                        row.xpath(RUBRIC_IDS_XPATH)]
+                        r.xpath(RUBRIC_IDS_XPATH)]
                 assert(len(ids) == 5), '%i criteria found; should be 5?'
 
                 data['rubricElements[%s]' % ids[scores[i] - 1]] = 'true'
@@ -87,17 +87,23 @@ def main():
     parser.add_argument('--assignment', help="Which assignment to submit")
     parser.add_argument('--name', help="TA which program should submit for")
     parser.add_argument('--sheetid', help="Google spreadsheet id program should submit to")
+    parser.add_argument('--submit_gs', action='store_true', help="Whether to submit to the google spreadsheet")
+    parser.add_argument('--submit_pf', action='store_true', help="Whether to submit to peer feedback")
     args = parser.parse_args()
+
+    submit_gs = bool(args.submit_gs)
+    submit_pf = bool(args.submit_pf)
 
     ta_name = get_ta_name()
     if not ta_name:
         ta_name = args.name if args.name else input('TA Name: ')
 
-    assignment = args.assignment if args.assignment else input('Assigment to submit: ')
+    assignment_input = args.assignment if args.assignment else input('Assigment to submit: ')
 
-    sheet_id = SHEET_ID
-    if not SHEET_ID:
-        sheet_id = args.sheetid if args.sheetid else input('Google Spreadsheet ID: ')
+    if submit_gs:
+        sheet_id = SHEET_ID
+        if not SHEET_ID:
+            sheet_id = args.sheetid if args.sheetid else input('Google Spreadsheet ID: ')
 
 
     assignment = None
@@ -115,14 +121,15 @@ def main():
     if not exists(filename):
         raise Exception('%s does not exist - have you ran pull-assignments.py?'%filename)
 
-    resp = input('\nSubmit current grades to PF and master spreadsheet with vars:'
-                +'\n- Google spreadsheet: '+
-                '%s\n- Assignment: %s\n- TA: %s \ny/n?'%(sheet_id, assignment, ta_name))
-    if resp != 'y': return
+    if submit_gs:
+        resp = input('\nSubmit current grades to PF and master spreadsheet with vars:'
+                    +'\n- Google spreadsheet: '+
+                    '%s\n- Assignment: %s\n- TA: %s \ny/n?'%(sheet_id, assignment, ta_name))
+        if resp != 'y': return
 
     rows = get_grade_sheet(filename)
-    gs_submit(ta_name, rows, sheet_id)
-    pf_submit(rows)
+    if submit_gs:    gs_submit(ta_name, rows, sheet_id)
+    if submit_pf:    pf_submit(rows)
 
 
 

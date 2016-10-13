@@ -33,6 +33,7 @@ i.e. a simulated annealing type approach -> energy defined as distance
 - confidence metric for each score
 - add a 'pressure' away from the average to expand grades to the tails
 - better skewness / kurtosis transform
+- spreadsheet wordcount column
 '''
 
 def ensure_matrix(function):
