@@ -108,10 +108,13 @@ def main():
 
     assignment = None
     assignments= []
-    for folder in glob('./assignments/*/'):
-        assignments.append(folder.split('\\')[1].split('(')[0])
+    for folder in glob('assignments/*/'):
+        folder = folder.replace('\\','/')
+
+        folder_assignment = folder.split('/')[1]
+        assignments.append(folder_assignment.split('(')[0])
         if assignment_input.lower() in folder.lower():
-            assignment = folder.split('\\')[1]
+            assignment = folder_assignment
             break
     if assignment is None:
         raise Exception('"%s" was not found; is the name correct?\n'%assignment_input +
