@@ -35,10 +35,10 @@ def get_grade_sheet(filename):
 
 
 def gs_submit(ta_name, rows, sheet_id):
-    ''' Submit all grades in the grades.xlsx file to 
+    ''' Submit all grades in the grades.xlsx file to
         the google spreadsheet '''
     idxs = [0,2,3,4,5,6,7,8,9,11]
-    data = [[r[i].internal_value if r[i].internal_value is not None else '' 
+    data = [[r[i].internal_value if r[i].internal_value is not None else ''
             for i in idxs] for r in rows if r[0].internal_value]
     data = [[d[0]] + [ta_name] + [d[-1]] + d[1:-1] + [sum([int(v) if v else 0 for v in d[1:-1]])]
             for d in data]
@@ -48,7 +48,7 @@ def gs_submit(ta_name, rows, sheet_id):
         sheet = Sheet(sheet_id)
         sheet.write(data)
     except Exception as e:
-        print e # Almost certainly occurs because of missing authentication file
+        print(e) # Almost certainly occurs because of missing authentication file
 
 
 def pf_submit(rows):
@@ -59,31 +59,31 @@ def pf_submit(rows):
             scores = [int(c.internal_value) for c in row[2:10]]
             data   = {'comment': str(row[11].internal_value)}
 
-            print row[0].internal_value
+            print(row[0].internal_value)
 
             url  = row[13].internal_value
             resp = session.get(url)
             page = resp.text
             tree = fromstring(page)
-    
+
             table = tree.xpath(RUBRIC_TABLE_XPATH)
             assert(len(table) == 1), 'Multiple submission tables found..'
 
             rows  = table[0].xpath('.//tr')
             assert(len(rows) == len(scores)), 'Different number of rubric items; should be 8?'
-            
+
             for i, r in enumerate(rows):
-                ids = [td.get('data-rubric-element-combined-id') for td in 
+                ids = [td.get('data-rubric-element-combined-id') for td in
                         r.xpath(RUBRIC_IDS_XPATH)]
                 assert(len(ids) == 5), '%i criteria found; should be 5?'
 
                 data['rubricElements[%s]' % ids[scores[i] - 1]] = 'true'
-                
+
             session.post(BASE_URL+'/drafts/%s/'%row[1].internal_value, verify=False, data=data)
 
-    
+
 def main():
-    parser = argparse.ArgumentParser() 
+    parser = argparse.ArgumentParser()
     parser.add_argument('--assignment', help="Which assignment to submit")
     parser.add_argument('--name', help="TA which program should submit for")
     parser.add_argument('--sheetid', help="Google spreadsheet id program should submit to")
@@ -119,7 +119,7 @@ def main():
     if assignment is None:
         raise Exception('"%s" was not found; is the name correct?\n'%assignment_input +
                         'Available assignments are:\n\t- %s'%'\n\t- '.join(assignments))
-    
+
     filename = './assignments/%s/grades.xlsx' % assignment
     if not exists(filename):
         raise Exception('%s does not exist - have you ran pull-assignments.py?'%filename)
