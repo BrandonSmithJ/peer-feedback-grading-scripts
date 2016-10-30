@@ -38,16 +38,18 @@ Provides a full analysis with plots and data for generating an educated guess on
 Run submit-assignment.py to add your grades.xlsx to the master google spreadsheet, and **partially*** submit on peer-feedback:
 
 ```shell
-> python submit-assignments.py -h
-usage: submit-assignments.py [-h] [--assignment ASSIGNMENT] 
-                                  [--name NAME]
-                                  [--sheetid SHEETID]
+$ python submit-assignments.py -h
+usage: submit-assignments.py [-h] [--assignment ASSIGNMENT] [--name NAME]
+                             [--sheetid SHEETID] [--submit_gs] [--submit_pf]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --assignment ASSIGNMENT   Which assignment to submit
-  --name NAME               TA which program should submit for
-  --sheetid SHEETID         Google spreadsheet id program should submit to
+  --assignment ASSIGNMENT
+                        Which assignment to submit
+  --name NAME           TA which program should submit for
+  --sheetid SHEETID     Google spreadsheet id program should submit to
+  --submit_gs           Whether to submit to the google spreadsheet
+  --submit_pf           Whether to submit to peer feedback
 ```
 
 Alternatively, you can choose to enter the information at the program's prompt. Finally, there will be a confirmation ensuring the information is correct before submitting.

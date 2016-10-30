@@ -77,10 +77,10 @@ def populate_spreadsheet(assignment_name, assignments={}):
             ws.cell(row=current_row, column=13, value=weights[assignment['name']])
         except KeyError:
             pass
-
-        ws.cell(row=current_row, column=14, value=assignment['feedback_url'])
-        ws.cell(row=current_row, column=15, value=assignment['paper_url'])
-        ws.cell(row=current_row, column=16, value=' ') # Make sure url is not extended past col
+        ws.cell(row=current_row, column=14, value=assignment['word_count'])
+        ws.cell(row=current_row, column=15, value=assignment['feedback_url'])
+        ws.cell(row=current_row, column=16, value=assignment['paper_url'])
+        ws.cell(row=current_row, column=17, value=' ') # Make sure url is not extended past col
 
         current_row += 1
 
@@ -135,11 +135,12 @@ def pull_assignments(session):
                 break
 
         if st_name is None: assert(0), 'Couldn\'t pull student name'
-        tasks.append({
+        task = {
             'name': st_name.lower().strip(),
             'feedback_url': BASE_URL+pf_link,
             'feedback_id': pf_link.split('/')[-1],
-            'paper_url': dl_link})
+            'paper_url': dl_link
+        }
 
         filepath = 'assignments/%s/Papers/' % assignment_name
         if not os.path.exists(filepath):
@@ -149,6 +150,16 @@ def pull_assignments(session):
             resp = session.get(dl_link)
             with open(filename, 'wb') as f:
                 f.write(resp.content)
+
+        # Add word count to task info
+        if os.path.exists(filename):
+            paper_words = pdf_to_csv(paper, ',', 1.5)
+            # Split on all the common separators 
+            task['word_count'] = len([d for a in [c for l in csv.split('\t') 
+                                        for c in l.split('\n')] 
+                                        for d in a.split(' ') if d])
+        tasks.append(task)
+    tasks.sort(key=lambda k:k['name'])
 
     with open('assignments/%s/Data/assignments.json' % assignment_name, 'w') as file:
         json.dump(tasks, file)

@@ -33,7 +33,7 @@ i.e. a simulated annealing type approach -> energy defined as distance
 - confidence metric for each score
 - add a 'pressure' away from the average to expand grades to the tails
 - better skewness / kurtosis transform
-- spreadsheet wordcount column
+
 '''
 
 def ensure_matrix(function):
@@ -112,7 +112,8 @@ def analyze_spreadsheet(assignment):
 
     for folder in glob('./assignments/*/'):
         if assignment.lower() in folder.lower():
-            assignment = folder.split('\\')[1]
+            folder = folder.replace('\\','/')
+            assignment = folder.split('/')[1]
             break
 
     data = fetch_data(assignment, overwrite=OVERWRITE)
@@ -442,7 +443,7 @@ def get_weighted_scores(assignment, sess=None, ta_mean=TA_MEAN, ta_stdev=TA_STDE
 
                 final = np.mean([avg, bc_ind, bc_tog])
                 scores.append(final)
-        averaged[name.lower()] = np.mean(scores) if scores else ta_mean
+        averaged[name.lower().strip()] = np.mean(scores) if scores else ta_mean
 
     # Final Box-Cox transform
     scores   = [averaged[k] for k in sorted(averaged.keys())]
