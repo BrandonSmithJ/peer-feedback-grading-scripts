@@ -145,7 +145,7 @@ def download_spreadsheet(sess, assignment, overwrite=True):
 
 
 def pdf_to_csv(filename, separator, threshold):
-
+    # Source: http://stackoverflow.com/questions/36902496/python-pdfminer-pdf-to-csv
     class CsvConverter(TextConverter):
         def __init__(self, *args, **kwargs):
             TextConverter.__init__(self, *args, **kwargs)
