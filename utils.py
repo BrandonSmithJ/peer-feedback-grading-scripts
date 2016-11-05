@@ -127,7 +127,6 @@ def download_spreadsheet(sess, assignment, overwrite=True):
                 if assignment.lower().strip() in assignments[-1]:
                     cid = a.get('href').split('/')[-1]
                     download_url = BASE_URL+'/data/download/assignment/feedback/'+cid
-                    print download_url
                     resp = sess.get(download_url)
                     with open(filename, 'wb') as f:
                         f.write(resp.content)
