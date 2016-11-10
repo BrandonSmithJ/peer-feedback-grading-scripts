@@ -7,13 +7,10 @@ import csv
 import yaml
 
 # Word count libraries
-from cStringIO          import StringIO
-from pdfminer.converter import LTChar, TextConverter
-from pdfminer.layout    import LAParams
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from StringIO    import StringIO
+from pdf_classes import PDFResourceManagerFixed, CsvConverter
+from pdfminer.pdfinterp import PDFPageInterpreter
 from pdfminer.pdfpage   import PDFPage
-from collections        import defaultdict
-
 
 # Disable verify warnings; can't verify due to peerfeedback ssl certificate issues
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -133,7 +130,8 @@ def download_spreadsheet(sess, assignment, overwrite=True):
                 assignments.append(a.text.lower().strip())
 
                 if assignment.lower().strip() in assignments[-1]:
-                    download_url = BASE_URL+'/data/download'+a.get('href')
+                    cid = a.get('href').split('/')[-1]
+                    download_url = BASE_URL+'/data/download/assignment/feedback/'+cid
                     resp = sess.get(download_url)
                     with open(filename, 'wb') as f:
                         f.write(resp.content)
@@ -143,62 +141,58 @@ def download_spreadsheet(sess, assignment, overwrite=True):
                 raise Exception('"%s" was not found; is the name correct?\n'%assignment +
                                 'Available assignments are:\n\t- %s'%'\n\t- '.join(assignments))
 
-
-def pdf_to_csv(filename, separator, threshold):
-    # Source: http://stackoverflow.com/questions/36902496/python-pdfminer-pdf-to-csv
-    class CsvConverter(TextConverter):
-        def __init__(self, *args, **kwargs):
-            TextConverter.__init__(self, *args, **kwargs)
-            self.separator = separator
-            self.threshold = threshold
-
-        def end_page(self, i):
-            lines = defaultdict(lambda: {})
-            for child in self.cur_item._objs:  # <-- changed
-                if isinstance(child, LTChar):
-                    (_, _, x, y) = child.bbox
-                    line = lines[int(-y)]
-                    line[x] = child._text.encode(self.codec)  # <-- changed
-            for y in sorted(lines.keys()):
-                line = lines[y]
-                self.line_creator(line)
-                self.outfp.write(self.line_creator(line))
-                self.outfp.write("\n")
-
-        def line_creator(self, line):
-            keys = sorted(line.keys())
-            # calculate the average distange between each character on this row
-            average_distance = sum([keys[i] - keys[i - 1] for i in range(1, len(keys))]) / len(keys)
-            # append the first character to the result
-            result = [line[keys[0]]]
-            for i in range(1, len(keys)):
-                # if the distance between this character and the last character is greater than the average*threshold
-                if (keys[i] - keys[i - 1]) > average_distance * self.threshold:
-                    # append the separator into that position
-                    result.append(self.separator)
-                # append the character
-                result.append(line[keys[i]])
-            printable_line = ''.join(result)
-            return printable_line
-
-    # ... the following part of the code is a remix of the
-    # convert() function in the pdfminer/tools/pdf2text module
-    rsrc = PDFResourceManager()
+def extract(filename, separator=',', threshold=1.5):
+    rsrc = PDFResourceManagerFixed()
     outfp = StringIO()
-    device = CsvConverter(rsrc, outfp, codec="utf-8", laparams=LAParams())
-    # becuase my test documents are utf-8 (note: utf-8 is the default codec)
 
-    fp = open(filename, 'rb')
-
-    interpreter = PDFPageInterpreter(rsrc, device)
-    for i, page in enumerate(PDFPage.get_pages(fp)):
-        outfp.write("START PAGE %d\n" % i)
-        if page is not None:
-            # print 'none'
-            interpreter.process_page(page)
-        outfp.write("END PAGE %d\n" % i)
-
+    device = CsvConverter(separator, threshold, rsrc, outfp, codec="ascii")
+    with open(filename, 'rb') as fp:
+        interpreter = PDFPageInterpreter(rsrc, device)
+        for i, page in enumerate(PDFPage.get_pages(fp)):
+            # outfp.write("START PAGE %d\n" % i)
+            if page is not None:
+                interpreter.process_page(page)
+            # outfp.write("END PAGE %d\n" % i)
     device.close()
-    fp.close()
-
     return outfp.getvalue()
+
+
+def pdf_word_count(filename):
+    ''' Due to extreme variability in pdf fonts / formats there are still a few
+        cases in which the extraction fails to parse actual text. The majority 
+        of cases will be accurate within a few percent. '''
+    def get_count(data):
+        words = data.replace('\n', ' ').replace('\t',' ').replace('.', ' ')
+        return len([w for w in words.split(' ') if w.strip()])
+    return get_count(extract(filename))
+
+    # ---
+    # Other methods of extraction. Not as accurate, more prone to failure
+    # ---
+    # import PyPDF2
+    # count = 0
+    # pdfFileObj = open(filename, 'rb')
+    # pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
+    # pages = pdfReader.numPages
+    # for i in range(pages):
+    #     pageObj = pdfReader.getPage(i)
+    #     data  = pageObj.extractText()
+    #     count += get_count(data)
+    # if count / float(pages) <= 1:
+    #     print count,count / float(pages),
+    #     outfp = StringIO()
+    #     codec = 'ascii'
+    
+    # from pdfminer.high_level import extract_text_to_fp
+    #     try:
+    #         with open(filename, "rb") as fp:
+    #             extract_text_to_fp(fp, outfp=outfp, codec=codec)
+            
+    #         words = outfp.getvalue()
+    #         count = max(get_count(words), count)
+    #     except:
+    #         count = -1
+    # print filename, count
+    # return count
+
+    

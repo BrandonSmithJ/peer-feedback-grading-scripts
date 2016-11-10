@@ -4,7 +4,7 @@ from openpyxl.styles import NamedStyle, Font, Alignment
 
 from lxml.html import fromstring
 from analysis  import get_weighted_scores
-from utils     import login
+from utils     import login, pdf_word_count
 
 import datetime
 import os
@@ -152,13 +152,10 @@ def pull_assignments(session):
                 f.write(resp.content)
 
         # Add word count to task info
-        if os.path.exists(filename):
-            paper_words = pdf_to_csv(paper, ',', 1.5)
-            # Split on all the common separators 
-            task['word_count'] = len([d for a in [c for l in csv.split('\t') 
-                                        for c in l.split('\n')] 
-                                        for d in a.split(' ') if d])
+        task['word_count'] = pdf_word_count(filename)
         tasks.append(task)
+
+    # Sort by student name
     tasks.sort(key=lambda k:k['name'])
 
     with open('assignments/%s/Data/assignments.json' % assignment_name, 'w') as file:
