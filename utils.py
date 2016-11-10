@@ -166,33 +166,5 @@ def pdf_word_count(filename):
         return len([w for w in words.split(' ') if w.strip()])
     return get_count(extract(filename))
 
-    # ---
-    # Other methods of extraction. Not as accurate, more prone to failure
-    # ---
-    # import PyPDF2
-    # count = 0
-    # pdfFileObj = open(filename, 'rb')
-    # pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
-    # pages = pdfReader.numPages
-    # for i in range(pages):
-    #     pageObj = pdfReader.getPage(i)
-    #     data  = pageObj.extractText()
-    #     count += get_count(data)
-    # if count / float(pages) <= 1:
-    #     print count,count / float(pages),
-    #     outfp = StringIO()
-    #     codec = 'ascii'
-    
-    # from pdfminer.high_level import extract_text_to_fp
-    #     try:
-    #         with open(filename, "rb") as fp:
-    #             extract_text_to_fp(fp, outfp=outfp, codec=codec)
-            
-    #         words = outfp.getvalue()
-    #         count = max(get_count(words), count)
-    #     except:
-    #         count = -1
-    # print filename, count
-    # return count
 
     
