@@ -5,6 +5,7 @@ from openpyxl.styles import NamedStyle, Font, Alignment
 from lxml.html import fromstring
 from analysis  import get_weighted_scores
 from utils     import login, pdf_word_count
+from string    import uppercase as ALPHABET 
 
 import datetime
 import os
@@ -13,15 +14,19 @@ import requests
 
 
 BASE_URL = 'https://peerfeedback.gatech.edu'
-GRADING_TEMPLATE_PATH = 'templates/KBAI PF Grading Template.xltx'
+GRADING_TEMPLATE_PATH = 'templates/KBAI PF Grading Template2.xltx'
 
-RUBRIC_TEXT_XPATH = '//div[@class="rubricContainerOpen"]//td[@class="rubricNoSelect"]/div'
-ASSIGNMENT_NAME_XPATH = '//div[contains(@class, "taskCard")]//h4'
-ASSIGNMENT_LINK_XPATH = '//h2/a[contains(.,"Download submitted assignment")]'
-ASSIGNMENT_LINKS_XPATH = '//a[contains(@class, "taskButton")]'
-RUBRIC_TABLE_XPATH = '//table[contains(@class, "rubricView")]'
-STUDENT_NAME_XPATH = '//div[@class="checkbox"]/label/div/a'
+# Peer Feedback Site Xpaths
+RUBRIC_TEXT_XPATH       = '//div[@class="rubricContainerOpen"]//td[@class="rubricNoSelect"]/div'
+ASSIGNMENT_NAME_XPATH   = '//div[contains(@class, "taskCard")]//h4'
+ASSIGNMENT_LINK_XPATH   = '//h2/a[contains(.,"Download submitted assignment")]'
+ASSIGNMENT_LINKS_XPATH  = '//a[contains(@class, "taskButton")]'
+RUBRIC_TABLE_XPATH      = '//table[contains(@class, "rubricView")]'
+STUDENT_NAME_XPATH      = '//div[@class="checkbox"]/label/div/a'
 
+# Spreadsheet Constants
+HEADER_ROW = 6
+RUBRIC_ROW = HEADER_ROW + 1
 
 def populate_spreadsheet(assignment_name, assignments={}):
 
@@ -43,46 +48,48 @@ def populate_spreadsheet(assignment_name, assignments={}):
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 1
 
-    center = NamedStyle(name='center')
-    center.font = Font(size=12)
-    center.alignment = Alignment(horizontal='center', vertical='center')
-    wb.add_named_style(center)
-
-    start_row = 8
+    start_row = RUBRIC_ROW + 1
     end_row = len(assignments) + start_row - 1
 
+    # Get spreadsheet header row values
+    head   = list(ws.iter_rows())[HEADER_ROW - 1]
+    header = {cell.internal_value : idx for idx, cell in enumerate(head, 1) if cell.internal_value}
+    maxcol = max(header.values())
+
+    # Format cells
+    for i in range(start_row, end_row + 1):
+        for c in ALPHABET[:maxcol]:
+            ws['%s%s' % (c, i)].font = Font(name='Arial', size=12)
+            ws['%s%s' % (c, i)].alignment = Alignment(horizontal='center', vertical='center')
+        ws['%s%s' % (ALPHABET[header['Student']-1], i)].alignment = Alignment(horizontal='left')
+
+    # Insert statistics
     ws['A1'] = 'Generated on %s'   % (datetime.datetime.now())
     ws['B4'] = '=AVERAGE(K%s:K%s)' % (start_row, end_row)
     ws['C4'] = '=MEDIAN(K%s:K%s)'  % (start_row, end_row)
     ws['D4'] = '=STDEV(K%s:K%s)'   % (start_row, end_row)
 
-    for i in range(start_row, end_row + 1):
-        for c in ['A', 'B', 'K', 'L', 'M', 'N', 'O']:
-            ws['%s%s' % (c, i)].style = center
+    # Insert rubric questions
+    for i, r in enumerate(rubric, 1):
+        ws.cell(row=RUBRIC_ROW, column=header['Question %i'%i], value=r)
 
-    for i, r in enumerate(rubric, 3):
-        ws.cell(row=7, column=i, value=r)
+    # Insert task values
+    sum_partial  = 'SUM(%(qone)s%(cr)s:%(qeight)s%(cr)s)'
+    sum_template = '=+IF(%(sp)s=0,"",%(sp)s)' % {'sp':sum_partial} 
+    sum_values   = {'qone'  :ALPHABET[header['Question 1']-1],
+                    'qeight':ALPHABET[header['Question 8']-1]}
+    for current_row, assignment in enumerate(assignments, start_row):
+        sum_values.update({'cr' : current_row})
 
-    current_row = start_row
-    for assignment in assignments:
-        sum_formula = '=+IF(SUM(C%(cr)s:J%(cr)s)=0,"",SUM(C%(cr)s:J%(cr)s))' % {
-            'cr': current_row
-        }
+        ws.cell(row=current_row, column=header['Student'], value=assignment['name'].title())
+        ws.cell(row=current_row, column=header['Total'], value=sum_template % sum_values)
 
-        ws.cell(row=current_row, column=1, value=assignment['name'])
-        ws.cell(row=current_row, column=2, value=assignment['feedback_id'])
-        ws.cell(row=current_row, column=11, value=sum_formula)
+        if assignment['name'] in weights:
+            ws.cell(row=current_row, column=header['Weighted Score'], value=weights[assignment['name']])
 
-        try:
-            ws.cell(row=current_row, column=13, value=weights[assignment['name']])
-        except KeyError:
-            pass
-        ws.cell(row=current_row, column=14, value=assignment['word_count'])
-        ws.cell(row=current_row, column=15, value=assignment['feedback_url'])
-        ws.cell(row=current_row, column=16, value=assignment['paper_url'])
-        ws.cell(row=current_row, column=17, value=' ') # Make sure url is not extended past col
-
-        current_row += 1
+        ws.cell(row=current_row, column=header['Word Count'], value=assignment['word_count'])
+        ws.cell(row=current_row, column=header['Peer Feedback Link'], value=assignment['feedback_url'])
+        ws.cell(row=current_row, column=maxcol+1, value=' ') # Make sure final value is not extended past col
 
     print('Saving grades to %s' % workbook_path)
     if os.path.exists(workbook_path):
@@ -114,7 +121,7 @@ def pull_assignments(session):
     tasks = []
     rubric = []
 
-    for link in links:
+    for curr_task_idx, link in enumerate(links[:5], 1):
         st_name = None
         pf_link = link.get('href')
         fb_resp = session.get(BASE_URL + pf_link)
@@ -154,6 +161,7 @@ def pull_assignments(session):
         # Add word count to task info
         task['word_count'] = pdf_word_count(filename)
         tasks.append(task)
+        print('%i/%i - %s' % (curr_task_idx, len(links), st_name))
 
     # Sort by student name
     tasks.sort(key=lambda k:k['name'])

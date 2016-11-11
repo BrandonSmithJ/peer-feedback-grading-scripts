@@ -6,8 +6,8 @@ from itertools import groupby
 import numpy as np
 import warnings
 
-TA_MEAN   = 34    # Change this to be in line with the current assignment
-TA_STDEV  = 3.75  # Change this if you think it should be different for the current assignment
+TA_MEAN   = 35    # Change this to be in line with the current assignment
+TA_STDEV  = 3.5  # Change this if you think it should be different for the current assignment
 TA_LAMBDA = 3.45  # Don't change this unless you know what you're doing -
                   # requires determining the lambda parameter for Box-Cox transformation
 

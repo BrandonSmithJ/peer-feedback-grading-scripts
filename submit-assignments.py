@@ -15,9 +15,10 @@ import yaml, argparse
 SHEET_ID = ''
 BASE_URL = 'https://peerfeedback.gatech.edu'
 
-RUBRIC_TABLE_XPATH = '//table[contains(@class, "rubricView") and '+\
+RUBRIC_TABLE_XPATH  = '//table[contains(@class, "rubricView") and '+\
                          'not(contains(@id, "viewonly"))]'
-RUBRIC_IDS_XPATH = './/td[contains(@class, "rubric-element")]'
+RUBRIC_IDS_XPATH    = './/td[contains(@class, "rubric-element")]'
+RUBRIC_ELE_ID_XPATH = 'data-rubric-element-combined-id'
 
 def get_ta_name():
     try:
@@ -31,7 +32,10 @@ def get_ta_name():
 def get_grade_sheet(filename):
     wb = load_workbook(filename)
     ws = wb.worksheets[0]
-    return list(ws.iter_rows())[7:]
+    
+    rows = list(ws.iter_rows())
+    head = [cell.internal_value for cell in rows[5]]
+    return [ {h:r.internal_value for h,r in zip(head, row)} for row in rows[7:] ]
 
 
 def gs_submit(ta_name, rows, sheet_id):
@@ -55,13 +59,13 @@ def pf_submit(rows):
     session = login()
 
     for row in rows:
-        if row[11].internal_value:
-            scores = [int(c.internal_value) for c in row[2:10]]
-            data   = {'comment': str(row[11].internal_value)}
+        if row['Comments']:
+            scores = [int(row['Question %i'%i]) for i in range(1,9) if row['Question %i'%i]]
+            data   = {'comment': str(row['Comments'])}
 
-            print(row[0].internal_value)
+            print(row['Student'])
 
-            url  = row[13].internal_value
+            url  = row['Peer Feedback Link']
             resp = session.get(url)
             page = resp.text
             tree = fromstring(page)
@@ -69,17 +73,19 @@ def pf_submit(rows):
             table = tree.xpath(RUBRIC_TABLE_XPATH)
             assert(len(table) == 1), 'Multiple submission tables found..'
 
-            rows  = table[0].xpath('.//tr')
-            assert(len(rows) == len(scores)), 'Different number of rubric items; should be 8?'
+            tbl_rows = table[0].xpath('.//tr')
+            assert(len(tbl_rows) == len(scores)), 'Different number of rubric items: '+\
+                        'found %i on page; found %i in grading sheet' % (len(tbl_rows), len(scores))
 
-            for i, r in enumerate(rows):
-                ids = [td.get('data-rubric-element-combined-id') for td in
+            for i, r in enumerate(tbl_rows):
+                ids = [td.get(RUBRIC_ELE_ID_XPATH) for td in
                         r.xpath(RUBRIC_IDS_XPATH)]
-                assert(len(ids) == 5), '%i criteria found; should be 5?'
+                assert(len(ids) == 5), 'Max %i criteria score found; should be 5?' % len(ids)
 
                 data['rubricElements[%s]' % ids[scores[i] - 1]] = 'true'
 
-            session.post(BASE_URL+'/drafts/%s/'%row[1].internal_value, verify=False, data=data)
+            pfb_id = url.split('/')[-1]
+            session.post(BASE_URL+'/drafts/%s/'%pfb_id, verify=False, data=data)
 
 
 def main():
@@ -87,12 +93,12 @@ def main():
     parser.add_argument('--assignment', help="Which assignment to submit")
     parser.add_argument('--name', help="TA which program should submit for")
     parser.add_argument('--sheetid', help="Google spreadsheet id program should submit to")
-    parser.add_argument('--submit_gs', action='store_true', help="Whether to submit to the google spreadsheet")
-    parser.add_argument('--submit_pf', action='store_true', help="Whether to submit to peer feedback")
+    parser.add_argument('--submit_gs', action='store_true', help="Submit to the google spreadsheet instead")
+    # parser.add_argument('--submit_pf', action='store_true', help="Whether to submit to peer feedback")
     args = parser.parse_args()
 
     submit_gs = bool(args.submit_gs)
-    submit_pf = bool(args.submit_pf)
+    submit_pf = not submit_gs #bool(args.submit_pf)
 
     if not submit_gs and not submit_pf:
         raise Exception('Must set at least one of --submit_gs or --submit_pf flags')

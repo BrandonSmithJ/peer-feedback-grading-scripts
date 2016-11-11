@@ -7,7 +7,7 @@ from pdfminer           import settings
 from collections        import defaultdict
 
 class CsvConverter(TextConverter):
-    ''' Fuzzy extraction '''
+    ''' Fuzzy extraction - http://stackoverflow.com/questions/36902496/python-pdfminer-pdf-to-csv'''
     def __init__(self, separator=',', threshold=1.5, *args, **kwargs):
         TextConverter.__init__(self, *args, **kwargs)
         self.separator = separator
