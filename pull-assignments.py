@@ -121,7 +121,7 @@ def pull_assignments(session):
     tasks = []
     rubric = []
 
-    for curr_task_idx, link in enumerate(links[:5], 1):
+    for curr_task_idx, link in enumerate(links, 1):
         st_name = None
         pf_link = link.get('href')
         fb_resp = session.get(BASE_URL + pf_link)
