@@ -62,7 +62,6 @@ def pf_submit(rows):
         if row['Comments']:
             scores = [int(row['Question %i'%i]) for i in range(1,9) if row['Question %i'%i]]
             data   = {'comment': str(row['Comments'])}
-
             print(row['Student'])
 
             url  = row['Peer Feedback Link']
@@ -86,7 +85,7 @@ def pf_submit(rows):
 
             pfb_id = url.split('/')[-1]
             session.post(BASE_URL+'/drafts/%s/'%pfb_id, verify=False, data=data)
-
+            
 
 def main():
     parser = argparse.ArgumentParser()
