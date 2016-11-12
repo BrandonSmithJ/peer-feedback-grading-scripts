@@ -14,7 +14,7 @@ import requests
 
 
 BASE_URL = 'https://peerfeedback.gatech.edu'
-GRADING_TEMPLATE_PATH = 'templates/KBAI PF Grading Template2.xltx'
+GRADING_TEMPLATE_PATH = 'templates/KBAI PF Grading Template.xltx'
 
 # Peer Feedback Site Xpaths
 RUBRIC_TEXT_XPATH       = '//div[@class="rubricContainerOpen"]//td[@class="rubricNoSelect"]/div'
@@ -64,10 +64,13 @@ def populate_spreadsheet(assignment_name, assignments={}):
         ws['%s%s' % (ALPHABET[header['Student']-1], i)].alignment = Alignment(horizontal='left')
 
     # Insert statistics
+    totals_fmt = '%(col)s%(row_s)s:%(col)s%(row_e)s' % {'col'  :ALPHABET[header['Total']-1], 
+                                                        'row_s':start_row,
+                                                        'row_e':end_row}
     ws['A1'] = 'Generated on %s'   % (datetime.datetime.now())
-    ws['B4'] = '=AVERAGE(K%s:K%s)' % (start_row, end_row)
-    ws['C4'] = '=MEDIAN(K%s:K%s)'  % (start_row, end_row)
-    ws['D4'] = '=STDEV(K%s:K%s)'   % (start_row, end_row)
+    ws['B4'] = '=AVERAGE(%s)' % totals_fmt
+    ws['C4'] = '=MEDIAN(%s)'  % totals_fmt
+    ws['D4'] = '=STDEV(%s)'   % totals_fmt
 
     # Insert rubric questions
     for i, r in enumerate(rubric, 1):
