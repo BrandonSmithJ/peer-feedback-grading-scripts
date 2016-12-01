@@ -7,7 +7,8 @@ import csv
 import yaml
 
 # Word count libraries
-from StringIO    import StringIO
+try:                from StringIO import StringIO
+except ImportError: from io       import StringIO
 from pdf_classes import PDFResourceManagerFixed, CsvConverter
 from pdfminer.pdfinterp import PDFPageInterpreter
 from pdfminer.pdfpage   import PDFPage
@@ -75,7 +76,7 @@ def fetch_data(assignment, sess=None, overwrite=True):
                 if sess is None: sess = login()
                 download_spreadsheet(sess, assignment, overwrite)
 
-            with open(directory + name + '_unprocessed_data.csv') as f:
+            with open(directory + name + '_unprocessed_data.csv', encoding='utf8') as f:
                 data = [line for line in csv.reader(f)]
             head = data.pop(0)
 

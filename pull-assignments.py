@@ -5,7 +5,7 @@ from openpyxl.styles import NamedStyle, Font, Alignment
 from lxml.html import fromstring
 from analysis  import get_weighted_scores
 from utils     import login, pdf_word_count
-from string    import uppercase as ALPHABET 
+from string    import ascii_uppercase as ALPHABET 
 
 import datetime
 import os
