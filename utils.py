@@ -86,6 +86,11 @@ def fetch_data(assignment, sess=None, overwrite=True):
             # Remove students who did not complete the assignment
             data = [d for d in data if d[3] == 'Yes']
 
+            # Use email as name if the name doesn't exist
+            for i,d in enumerate(data):
+                if not d[1]:
+                    data[i][1] = data[i][0] + '@gatech.edu'
+
             # Rejoin data and quote comments
             quote_idx = [i for i,h in enumerate(head) if 'comment' in h.lower()]
             data = [','.join(head)] + \
@@ -96,7 +101,7 @@ def fetch_data(assignment, sess=None, overwrite=True):
                     for d in data]
 
             with open(directory + name + '_clean.csv', 'w+') as f:
-                f.write('\n'.join(data))
+                f.write('\n'.join([''.join([ch for ch in d if ord(ch) < 128]) for d in data]))
 
         with open(directory + name + '_clean.csv') as f:
             results += [{
