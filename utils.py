@@ -84,12 +84,12 @@ def fetch_data(assignment, sess=None, overwrite=True):
             head += ['student_score_4', 'student_comment_4', 'student_display_id_4']
 
             # Remove students who did not complete the assignment
-            data = [d for d in data if d[3] == 'Yes']
+            data = [d for d in data if d[4] == 'Yes']
 
             # Use email as name if the name doesn't exist
             for i,d in enumerate(data):
-                if not d[1]:
-                    data[i][1] = data[i][0] + '@gatech.edu'
+                if not d[2]:
+                    data[i][2] = data[i][1]
 
             # Rejoin data and quote comments
             quote_idx = [i for i,h in enumerate(head) if 'comment' in h.lower()]
