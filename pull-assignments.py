@@ -112,77 +112,83 @@ def pull_assignments(session):
     page = resp.text
     tree = fromstring(page)
 
-    assignment_name = tree.xpath(ASSIGNMENT_NAME_XPATH)[0].text.title()
+    names = [n.text.title() for n in tree.xpath(ASSIGNMENT_NAME_XPATH)]
+    assignment_names = set(names) 
+    for assignment_name in assignment_names:
+        if len(assignment_names) > 1:
+            pull = input('Multiple assignments found. Pull "%s"? (y/n)' % assignment_name)
+            if pull != 'y':
+                continue
 
-    print('Pulling assignments for %s...' % (assignment_name))
+        print('Pulling assignments for %s...' % (assignment_name))
 
-    links = tree.xpath(ASSIGNMENT_LINKS_XPATH)
+        links = tree.xpath(ASSIGNMENT_LINKS_XPATH)
+        if not os.path.exists('assignments/%s/Data' % (assignment_name)):
+            os.makedirs('assignments/%s/Data' % (assignment_name))
 
-    if not os.path.exists('assignments/%s/Data' % (assignment_name)):
-        os.makedirs('assignments/%s/Data' % (assignment_name))
+        tasks = []
+        rubric = []
 
-    tasks = []
-    rubric = []
+        names_links = [(name, link) for name, link in zip(names, links) if name == assignment_name]
+        for curr_task_idx, (name, link) in enumerate(names_links, 1):
+            st_name = None
+            pf_link = link.get('href')
+            fb_resp = session.get(BASE_URL + pf_link)
+            fb_page = fb_resp.text
+            fb_tree = fromstring(fb_page)
+            dl_link = fb_tree.xpath(ASSIGNMENT_LINK_XPATH)[0].get('href')
+            assert(dl_link)
 
-    for curr_task_idx, link in enumerate(links, 1):
-        st_name = None
-        pf_link = link.get('href')
-        fb_resp = session.get(BASE_URL + pf_link)
-        fb_page = fb_resp.text
-        fb_tree = fromstring(fb_page)
-        dl_link = fb_tree.xpath(ASSIGNMENT_LINK_XPATH)[0].get('href')
-        assert(dl_link)
+            if not rubric:
+                rubric_table = fb_tree.xpath(RUBRIC_TABLE_XPATH)[-1]
+                rubric = [
+                    r.text.strip()
+                    for r in fb_tree.xpath(RUBRIC_TEXT_XPATH)]
 
-        if not rubric:
-            rubric_table = fb_tree.xpath(RUBRIC_TABLE_XPATH)[-1]
-            rubric = [
-                r.text.strip()
-                for r in fb_tree.xpath(RUBRIC_TEXT_XPATH)]
+            for a in fb_tree.xpath(STUDENT_NAME_XPATH):
+                if a.text.strip():
+                    st_name = a.text.strip()
+                    break
 
-        for a in fb_tree.xpath(STUDENT_NAME_XPATH):
-            if a.text.strip():
-                st_name = a.text.strip()
-                break
+            if st_name is None: assert(0), 'Couldn\'t pull student name'
+            task = {
+                'name': st_name.lower().strip(),
+                'feedback_url': BASE_URL+pf_link,
+                'feedback_id': pf_link.split('/')[-1],
+                'paper_url': dl_link
+            }
 
-        if st_name is None: assert(0), 'Couldn\'t pull student name'
-        task = {
-            'name': st_name.lower().strip(),
-            'feedback_url': BASE_URL+pf_link,
-            'feedback_id': pf_link.split('/')[-1],
-            'paper_url': dl_link
-        }
+            filepath = 'assignments/%s/Papers/' % assignment_name
+            if not os.path.exists(filepath):
+                os.makedirs(filepath)
+            filename = filepath + st_name.replace(' ', '') + '.pdf'
+            if not os.path.exists(filename):
+                resp = session.get(dl_link)
+                with open(filename, 'wb') as f:
+                    f.write(resp.content)
 
-        filepath = 'assignments/%s/Papers/' % assignment_name
-        if not os.path.exists(filepath):
-            os.makedirs(filepath)
-        filename = filepath + st_name.replace(' ', '') + '.pdf'
-        if not os.path.exists(filename):
-            resp = session.get(dl_link)
-            with open(filename, 'wb') as f:
-                f.write(resp.content)
+            # Add word count to task info
+            task['word_count'] = pdf_word_count(filename)
+            tasks.append(task)
+            print('%i/%i - %s' % (curr_task_idx, len(links), st_name))
 
-        # Add word count to task info
-        task['word_count'] = pdf_word_count(filename)
-        tasks.append(task)
-        print('%i/%i - %s' % (curr_task_idx, len(links), st_name))
+        # Sort by student name
+        tasks.sort(key=lambda k:k['name'])
 
-    # Sort by student name
-    tasks.sort(key=lambda k:k['name'])
+        with open('assignments/%s/Data/assignments.json' % assignment_name, 'w') as file:
+            json.dump(tasks, file)
 
-    with open('assignments/%s/Data/assignments.json' % assignment_name, 'w') as file:
-        json.dump(tasks, file)
+        with open('assignments/%s/Data/rubric.json' % assignment_name, 'w') as file:
+            json.dump(rubric, file)
 
-    with open('assignments/%s/Data/rubric.json' % assignment_name, 'w') as file:
-        json.dump(rubric, file)
+        with open('assignments/%s/Data/weights.json' % assignment_name, 'w') as file:
+            # Weighted scores reflect a 'best guess' score for the paper, based
+            # on peerfeed back for the student. Still very rough at the moment,
+            # and does poorly on outliers
+            weights = get_weighted_scores(assignment_name, session)
+            json.dump(weights, file)
 
-    with open('assignments/%s/Data/weights.json' % assignment_name, 'w') as file:
-        # Weighted scores reflect a 'best guess' score for the paper, based
-        # on peerfeed back for the student. Still very rough at the moment,
-        # and does poorly on outliers
-        weights = get_weighted_scores(assignment_name, session)
-        json.dump(weights, file)
-
-    populate_spreadsheet(assignment_name, tasks)
+        populate_spreadsheet(assignment_name, tasks)
 
 
 def process():
