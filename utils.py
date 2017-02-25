@@ -57,7 +57,7 @@ def login():
                             '_csrf_token': csrf,
                             '_submit':'Log in' })
 
-    if 'Your courses and tasks' not in resp.text:
+    if 'courses and tasks' not in resp.text.lower():
         raise Exception('Something went wrong; couldn\'t log in')
 
     return sess
