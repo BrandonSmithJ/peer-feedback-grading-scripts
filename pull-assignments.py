@@ -170,7 +170,7 @@ def pull_assignments(session):
             # Add word count to task info
             task['word_count'] = pdf_word_count(filename)
             tasks.append(task)
-            print('%i/%i - %s' % (curr_task_idx, len(links), st_name))
+            print('%i/%i - %s' % (curr_task_idx, len(names_links), st_name))
 
         # Sort by student name
         tasks.sort(key=lambda k:k['name'])

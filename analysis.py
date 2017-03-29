@@ -381,6 +381,10 @@ def get_weighted_scores(assignment, sess=None, ta_mean=TA_MEAN, ta_stdev=TA_STDE
         indexed      = [[i, uid, score] for uid in score_dict
                                         for i,score in enumerate(score_dict[uid])]
         idxs, scores = [ix[:2] for ix in indexed], [ix[2] for ix in indexed]
+        if not len(idxs):
+            print('No student feedback has been given yet - cannot calculate weighted scores.')
+            return {}
+            
         transformed  = [i+[k] for i,k in zip(idxs, bc_transform(scores))]
         transformed  = {k:[v[2] for v in sorted(list(grp), key=lambda y:y[0])] # Sort by index and keep score
                         for k,grp in groupby(transformed, lambda x:x[1])}      # Group by UID
